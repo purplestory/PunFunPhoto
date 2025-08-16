@@ -90,10 +90,11 @@ struct TopLoaderView: View {
                                                     // 탑로더 터치 영역 (실제 컨텐츠가 있는 영역만)
                         if state.isAttached && state.showTopLoader {
                             // 실제 탑로더 컨텐츠가 있을 때만 터치 영역 활성화
+                            // 스티커와 텍스트가 없는 빈 공간만 터치 가능하도록 작게 설정
                             Color.clear
                                 .contentShape(Rectangle())
-                                .frame(width: boxSize.width, height: boxSize.height)
-                                .zIndex(100)
+                                .frame(width: min(boxSize.width, 100), height: min(boxSize.height, 80))
+                                .zIndex(50) // 스티커와 텍스트보다 낮게 설정
                                 .allowsHitTesting(true)
                                 .onTapGesture {
                                     print("[DEBUG] 탑로더 터치 영역 감지됨")
@@ -121,7 +122,7 @@ struct TopLoaderView: View {
                                 ForEach(state.texts, id: \.id) { textItem in
                                     textView(for: textItem, geometry: geometry)
                                         .contentShape(Rectangle())
-                                        .zIndex(10)
+                                        .zIndex(200) // 스티커보다 높게 설정
                                 }
                             }
                         }
@@ -371,7 +372,7 @@ private func textView(for textItem: TextItem, geometry: GeometryProxy) -> some V
 
     TextStickerView(textItem: textItem)
         .position(textItem.position)
-        .zIndex(100)
+        .zIndex(200) // 스티커보다 높게 설정
         .rotationEffect(textItem.rotation, anchor: .center)
         .contentShape(Rectangle())
         .allowsHitTesting(true)
@@ -419,6 +420,7 @@ private func stickerView(for sticker: StickerItem) -> some View {
             .position(sticker.position)
             .rotationEffect(sticker.rotation)
             .scaleEffect(1/scaleFactor)
+            .zIndex(150) // 탑로더 터치 영역보다 높게, 텍스트보다 낮게
             .contentShape(Rectangle())
             .allowsHitTesting(true)
             .gesture(dragGesture)

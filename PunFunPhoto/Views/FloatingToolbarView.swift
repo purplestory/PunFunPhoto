@@ -243,8 +243,10 @@ struct FloatingToolbarView: View {
             print("[DEBUG] 상단 메뉴 '\(type.title)' 터치됨")
             print("[DEBUG] 터치 전 상태 - selectedMenu: \(selectedMenu?.title ?? "nil")")
             
-            // 포토카드/탑로더 팝업 메뉴가 열린 상태에서 상단 메뉴를 터치하면 팝업 메뉴들 닫기
+            // 먼저 포토카드/탑로더 팝업 메뉴들을 닫기
+            print("[DEBUG] onClosePopupMenus 호출 시작")
             onClosePopupMenus?()
+            print("[DEBUG] onClosePopupMenus 호출 완료")
             
             // 메뉴 전환 로직: 같은 메뉴를 터치하면 닫고, 다른 메뉴를 터치하면 바로 열기
             withAnimation {

@@ -355,7 +355,6 @@ struct PhotoEditorView: View {
                 
                 // 스티커 메뉴
                 if showObjectMenu {
-                    print("[DEBUG] 스티커 메뉴 렌더링 - showObjectMenu: \(showObjectMenu)")
                     VStack(alignment: .leading, spacing: 0) {
                         if let textId = selectedTextId {
                             Button(action: {
@@ -418,6 +417,9 @@ struct PhotoEditorView: View {
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
                     .zIndex(9999)
                     .position(x: objectMenuPosition.x, y: objectMenuPosition.y)
+                    .onAppear {
+                        print("[DEBUG] 스티커 메뉴 렌더링됨 - showObjectMenu: \(showObjectMenu), selectedTextId: \(String(describing: selectedTextId)), selectedStickerId: \(String(describing: selectedStickerId))")
+                    }
                 }
                 
                 FloatingToolbarView(
