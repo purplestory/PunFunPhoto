@@ -124,36 +124,11 @@ struct PhotoBoxContainerView: View {
                             showToast: $showToast,
                             toastMessage: $toastMessage,
                             selectedMenu: $selectedMenu,
-                            showContextMenu: $showContextMenu,
                             showTopLoaderContextMenu: $showTopLoader1ContextMenu
                         )
-                        // .contentShape(Rectangle())
                         .onAppear {
                             print("[DEBUG] TopLoaderView 조건: isAttached=\(topLoader1.isAttached), showTopLoader=\(topLoader1.showTopLoader)")
                         }
-                        .simultaneousGesture(
-                            TapGesture().onEnded {
-                                print("[DEBUG] 탑로더1 터치됨")
-                                print("[DEBUG] 터치 전 상태 - showContextMenu: \(showContextMenu), showTopLoader1ContextMenu: \(showTopLoader1ContextMenu), showTopLoader2ContextMenu: \(showTopLoader2ContextMenu)")
-                                
-                                // 다른 모든 메뉴 닫기
-                                selectedMenu = nil
-                                showContextMenu = false
-                                showTopLoader2ContextMenu = false
-                                
-                                // 현재 탑로더 메뉴가 열려있으면 닫기
-                                if showTopLoader1ContextMenu {
-                                    showTopLoader1ContextMenu = false
-                                    print("[DEBUG] 탑로더1 메뉴 닫힘")
-                                } else {
-                                    // 닫혀있으면 열기
-                                    showTopLoader1ContextMenu = true
-                                    print("[DEBUG] 탑로더1 메뉴 열림")
-                                }
-                                
-                                print("[DEBUG] 터치 후 상태 - showContextMenu: \(showContextMenu), showTopLoader1ContextMenu: \(showTopLoader1ContextMenu), showTopLoader2ContextMenu: \(showTopLoader2ContextMenu)")
-                            }
-                        )
                     }
                 }
                 .frame(width: boxSize.width, height: boxSize.height)
@@ -173,36 +148,11 @@ struct PhotoBoxContainerView: View {
                             showToast: $showToast,
                             toastMessage: $toastMessage,
                             selectedMenu: $selectedMenu,
-                            showContextMenu: $showContextMenu,
                             showTopLoaderContextMenu: $showTopLoader2ContextMenu
                         )
-                        // .contentShape(Rectangle())
                         .onAppear {
                             print("[DEBUG] TopLoaderView 조건: isAttached=\(topLoader2.isAttached), showTopLoader=\(topLoader2.showTopLoader)")
                         }
-                        .simultaneousGesture(
-                            TapGesture().onEnded {
-                                print("[DEBUG] 탑로더2 터치됨")
-                                print("[DEBUG] 터치 전 상태 - showContextMenu: \(showContextMenu), showTopLoader1ContextMenu: \(showTopLoader1ContextMenu), showTopLoader2ContextMenu: \(showTopLoader2ContextMenu)")
-                                
-                                // 다른 모든 메뉴 닫기
-                                selectedMenu = nil
-                                showContextMenu = false
-                                showTopLoader1ContextMenu = false
-                                
-                                // 현재 탑로더 메뉴가 열려있으면 닫기
-                                if showTopLoader2ContextMenu {
-                                    showTopLoader2ContextMenu = false
-                                    print("[DEBUG] 탑로더2 메뉴 닫힘")
-                                } else {
-                                    // 닫혀있으면 열기
-                                    showTopLoader2ContextMenu = true
-                                    print("[DEBUG] 탑로더2 메뉴 열림")
-                                }
-                                
-                                print("[DEBUG] 터치 후 상태 - showContextMenu: \(showContextMenu), showTopLoader1ContextMenu: \(showTopLoader1ContextMenu), showTopLoader2ContextMenu: \(showTopLoader2ContextMenu)")
-                            }
-                        )
                     }
                 }
                 .frame(width: boxSize.width, height: boxSize.height)

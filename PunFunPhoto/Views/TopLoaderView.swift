@@ -25,7 +25,7 @@ private extension View {
 
 struct TopLoaderView: View {
     @ObservedObject var state: TopLoaderState
-    @Binding var showContextMenu: Bool
+
     @State private var showTextEditor = false
     @State private var contextMenuPosition: CGPoint = .zero {
         didSet {
@@ -52,7 +52,7 @@ struct TopLoaderView: View {
     // 원본 크기 기준 cornerRadius
     private let baseCornerRadius: CGFloat = 30
     
-    init(state: TopLoaderState, boxSize: CGSize, boxOrigin: CGPoint = .zero, scaleFactor: CGFloat = 1.0, showToast: Binding<Bool>, toastMessage: Binding<String>, selectedMenu: Binding<MenuType?>, showContextMenu: Binding<Bool>, showTopLoaderContextMenu: Binding<Bool>) {
+    init(state: TopLoaderState, boxSize: CGSize, boxOrigin: CGPoint = .zero, scaleFactor: CGFloat = 1.0, showToast: Binding<Bool>, toastMessage: Binding<String>, selectedMenu: Binding<MenuType?>, showTopLoaderContextMenu: Binding<Bool>) {
         self.state = state
         self.boxSize = boxSize
         self.boxOrigin = boxOrigin
@@ -60,7 +60,6 @@ struct TopLoaderView: View {
         self._showToast = showToast
         self._toastMessage = toastMessage
         self._selectedMenu = selectedMenu
-        self._showContextMenu = showContextMenu
         self._showTopLoaderContextMenu = showTopLoaderContextMenu
         // 박스 중앙으로 초기화
         self._lastEmptyTapPosition = State(initialValue: CGPoint(x: boxSize.width/2, y: boxSize.height/2))
@@ -117,11 +116,18 @@ struct TopLoaderView: View {
                                             if !isOnText && !isOnSticker {
                                                 contextMenuPosition = location
                                                 lastEmptyTapPosition = location
-                                                showContextMenu = true
+                                                // 현재 메뉴가 열려있으면 닫기, 닫혀있으면 열기
+                                                if showTopLoaderContextMenu {
+                                                    showTopLoaderContextMenu = false
+                                                    print("[DEBUG] 탑로더 메뉴 닫힘")
+                                                } else {
+                                                    showTopLoaderContextMenu = true
+                                                    print("[DEBUG] 탑로더 메뉴 열림")
+                                                }
                                                 showObjectMenu = false
                                                 selectedStickerId = nil
                                                 selectedTextId = nil
-                                                print("[DEBUG] [빈공간탭] contextMenuPosition=\(contextMenuPosition), showContextMenu=\(showContextMenu), showObjectMenu=\(showObjectMenu), selectedTextId=\(String(describing: selectedTextId)), selectedStickerId=\(String(describing: selectedStickerId))")
+                                                print("[DEBUG] [빈공간탭] contextMenuPosition=\(contextMenuPosition), showTopLoaderContextMenu=\(showTopLoaderContextMenu), showObjectMenu=\(showObjectMenu), selectedTextId=\(String(describing: selectedTextId)), selectedStickerId=\(String(describing: selectedStickerId))")
                                             } else {
                                                 // 스티커/텍스트 위를 탭한 경우에는 DragGesture에서 아무 동작도 하지 않음
                                                 print("[DEBUG] [스티커/텍스트 hit] DragGesture 무시: location=\(location)")
@@ -435,16 +441,7 @@ struct TopLoaderView: View {
         .onChange(of: showObjectMenu) { newValue in
             print("[DEBUG] showObjectMenu changed: \(newValue)")
         }
-        .onChange(of: showContextMenu) { newValue in
-            print("[DEBUG] showContextMenu changed: \(newValue)")
-            if newValue && !showObjectMenu {
-                if lastEmptyTapPosition == .zero {
-                    lastEmptyTapPosition = CGPoint(x: boxSize.width/2, y: boxSize.height/2)
-                }
-                contextMenuPosition = lastEmptyTapPosition
-                print("[DEBUG] [onChange] 탑로더 메뉴 contextMenuPosition 강제 갱신: \(contextMenuPosition)")
-            }
-        }
+
         // 탑로더 컨텍스트 메뉴 오버레이
         .overlay(
             Group {
@@ -457,30 +454,30 @@ struct TopLoaderView: View {
                                     showTopLoaderContextMenu = false
                                 }
                             }) {
-                                HStack(spacing: 8) {
+                                HStack(spacing: 8 * scaleFactor) {
                                     Image(systemName: item.icon)
                                         .imageScale(.medium)
-                                        .frame(width: 24)
+                                        .frame(width: 24 * scaleFactor)
                                     Text(item.title)
-                                        .font(.system(size: 16, weight: .medium))
+                                        .font(.system(size: 16 * scaleFactor, weight: .medium))
                                         .lineLimit(1)
                                 }
-                                .frame(height: 36)
+                                .frame(height: 36 * scaleFactor)
                                 .frame(maxWidth: .infinity, alignment: .leading)
                             }
                             .buttonStyle(PlainButtonStyle())
                             .disabled(!item.isEnabled)
                         }
                     }
-                    .padding(.vertical, 8)
-                    .padding(.horizontal, 12)
+                    .padding(.vertical, 8 * scaleFactor)
+                    .padding(.horizontal, 12 * scaleFactor)
                     .background(Color(.systemBackground).opacity(0.9))
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
-                    .shadow(color: Color.black.opacity(0.1), radius: 6, x: 0, y: 3)
-                    .frame(width: 200)
+                    .clipShape(RoundedRectangle(cornerRadius: 12 * scaleFactor))
+                    .shadow(color: Color.black.opacity(0.1), radius: 6 * scaleFactor, x: 0, y: 3 * scaleFactor)
+                    .frame(width: 200 * scaleFactor)
                     .position(
-                        x: contextMenuPosition.x,
-                        y: contextMenuPosition.y
+                        x: contextMenuPosition.x * scaleFactor,
+                        y: contextMenuPosition.y * scaleFactor
                     )
                     .zIndex(9998)
                 }
@@ -650,7 +647,7 @@ private func stickerView(for sticker: StickerItem) -> some View {
 }
 
 #Preview {
-    TopLoaderView(state: TopLoaderState(), boxSize: CGSize(width: 300, height: 400), showToast: .constant(false), toastMessage: .constant(""), selectedMenu: .constant(nil), showContextMenu: .constant(false), showTopLoaderContextMenu: .constant(false))
+    TopLoaderView(state: TopLoaderState(), boxSize: CGSize(width: 300, height: 400), showToast: .constant(false), toastMessage: .constant(""), selectedMenu: .constant(nil), showTopLoaderContextMenu: .constant(false))
         .background(Color.gray.opacity(0.2))
 }
 

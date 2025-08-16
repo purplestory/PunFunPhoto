@@ -293,8 +293,8 @@ struct PhotoEditorView: View {
                         print("[DEBUG] 닫기 전 상태 - showContextMenu: \(showContextMenu), showTopLoader1ContextMenu: \(showTopLoader1ContextMenu ?? false), showTopLoader2ContextMenu: \(showTopLoader2ContextMenu ?? false)")
                         
                         showContextMenu = false
-                        showTopLoader1ContextMenu = nil
-                        showTopLoader2ContextMenu = nil
+                        showTopLoader1ContextMenu = false
+                        showTopLoader2ContextMenu = false
                         
                         print("[DEBUG] 닫기 후 상태 - showContextMenu: \(showContextMenu), showTopLoader1ContextMenu: \(showTopLoader1ContextMenu ?? false), showTopLoader2ContextMenu: \(showTopLoader2ContextMenu ?? false)")
                     }
@@ -412,6 +412,7 @@ struct PhotoEditorView: View {
         topLoader1: TopLoaderState(),
         topLoader2: TopLoaderState(),
         showPhotoPicker: .constant(false),
+        selectedMenu: .constant(nil),
         showTopLoader1ContextMenu: .constant(false as Bool?),
         showTopLoader2ContextMenu: .constant(false as Bool?)
     )
