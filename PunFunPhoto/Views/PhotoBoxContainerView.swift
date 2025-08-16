@@ -138,7 +138,7 @@ struct PhotoBoxContainerView: View {
                         .simultaneousGesture(
                             TapGesture().onEnded {
                                 print("[DEBUG] 탑로더1 터치됨")
-                                print("[DEBUG] 터치 전 상태 - showContextMenu: \(showContextMenu), showTopLoader1ContextMenu: \(showTopLoader1ContextMenu?.description ?? "nil"), showTopLoader2ContextMenu: \(showTopLoader2ContextMenu?.description ?? "nil")")
+                                print("[DEBUG] 터치 전 상태 - showContextMenu: \(showContextMenu), showTopLoader1ContextMenu: \(showTopLoader1ContextMenu), showTopLoader2ContextMenu: \(showTopLoader2ContextMenu)")
                                 
                                 // 다른 모든 메뉴 닫기
                                 selectedMenu = nil
@@ -155,7 +155,7 @@ struct PhotoBoxContainerView: View {
                                     print("[DEBUG] 탑로더1 메뉴 열림")
                                 }
                                 
-                                print("[DEBUG] 터치 후 상태 - showContextMenu: \(showContextMenu), showTopLoader1ContextMenu: \(showTopLoader1ContextMenu?.description ?? "nil"), showTopLoader2ContextMenu: \(showTopLoader2ContextMenu?.description ?? "nil")")
+                                print("[DEBUG] 터치 후 상태 - showContextMenu: \(showContextMenu), showTopLoader1ContextMenu: \(showTopLoader1ContextMenu), showTopLoader2ContextMenu: \(showTopLoader2ContextMenu)")
                             }
                         )
                     }
@@ -186,7 +186,7 @@ struct PhotoBoxContainerView: View {
                         .simultaneousGesture(
                             TapGesture().onEnded {
                                 print("[DEBUG] 탑로더2 터치됨")
-                                print("[DEBUG] 터치 전 상태 - showContextMenu: \(showContextMenu), showTopLoader1ContextMenu: \(showTopLoader1ContextMenu?.description ?? "nil"), showTopLoader2ContextMenu: \(showTopLoader2ContextMenu?.description ?? "nil")")
+                                print("[DEBUG] 터치 전 상태 - showContextMenu: \(showContextMenu), showTopLoader1ContextMenu: \(showTopLoader1ContextMenu), showTopLoader2ContextMenu: \(showTopLoader2ContextMenu)")
                                 
                                 // 다른 모든 메뉴 닫기
                                 selectedMenu = nil
@@ -203,7 +203,7 @@ struct PhotoBoxContainerView: View {
                                     print("[DEBUG] 탑로더2 메뉴 열림")
                                 }
                                 
-                                print("[DEBUG] 터치 후 상태 - showContextMenu: \(showContextMenu), showTopLoader1ContextMenu: \(showTopLoader1ContextMenu?.description ?? "nil"), showTopLoader2ContextMenu: \(showTopLoader2ContextMenu?.description ?? "nil")")
+                                print("[DEBUG] 터치 후 상태 - showContextMenu: \(showContextMenu), showTopLoader1ContextMenu: \(showTopLoader1ContextMenu), showTopLoader2ContextMenu: \(showTopLoader2ContextMenu)")
                             }
                         )
                     }

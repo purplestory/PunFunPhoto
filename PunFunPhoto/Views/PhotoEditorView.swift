@@ -282,13 +282,13 @@ struct PhotoEditorView: View {
                     showTopLoader2ContextMenu: $showTopLoader2ContextMenu,
                     onClosePopupMenus: {
                         print("[DEBUG] onClosePopupMenus 호출됨")
-                        print("[DEBUG] 닫기 전 상태 - showContextMenu: \(showContextMenu), showTopLoader1ContextMenu: \(showTopLoader1ContextMenu?.description ?? "nil"), showTopLoader2ContextMenu: \(showTopLoader2ContextMenu?.description ?? "nil")")
+                        print("[DEBUG] 닫기 전 상태 - showContextMenu: \(showContextMenu), showTopLoader1ContextMenu: \(showTopLoader1ContextMenu ?? false), showTopLoader2ContextMenu: \(showTopLoader2ContextMenu ?? false)")
                         
                         showContextMenu = false
                         showTopLoader1ContextMenu = nil
                         showTopLoader2ContextMenu = nil
                         
-                        print("[DEBUG] 닫기 후 상태 - showContextMenu: \(showContextMenu), showTopLoader1ContextMenu: \(showTopLoader1ContextMenu?.description ?? "nil"), showTopLoader2ContextMenu: \(showTopLoader2ContextMenu?.description ?? "nil")")
+                        print("[DEBUG] 닫기 후 상태 - showContextMenu: \(showContextMenu), showTopLoader1ContextMenu: \(showTopLoader1ContextMenu ?? false), showTopLoader2ContextMenu: \(showTopLoader2ContextMenu ?? false)")
                     }
                 )
             }
