@@ -44,6 +44,7 @@ struct FloatingToolbarView: View {
     @Binding var showTopLoader1ContextMenu: Bool?
     @Binding var showTopLoader2ContextMenu: Bool?
     var onMenuChange: (() -> Void)? = nil
+    var onClosePopupMenus: (() -> Void)? = nil
     
     private var isLandscape: Bool {
         horizontalSizeClass == .regular
@@ -240,9 +241,7 @@ struct FloatingToolbarView: View {
     private func toolbarButton(type: MenuType) -> some View {
         Button(action: {
             // 포토카드/탑로더 팝업 메뉴가 열린 상태에서 상단 메뉴를 터치하면 팝업 메뉴들 닫기
-            showContextMenu = false
-            showTopLoader1ContextMenu = nil
-            showTopLoader2ContextMenu = nil
+            onClosePopupMenus?()
             
             // 다른 메뉴를 터치하면 기존 메뉴가 닫히면서 새 메뉴가 바로 열리도록
             if selectedMenu == type {

@@ -279,7 +279,12 @@ struct PhotoEditorView: View {
                     selectedMenu: $selectedMenu,
                     showContextMenu: $showContextMenu,
                     showTopLoader1ContextMenu: $showTopLoader1ContextMenu,
-                    showTopLoader2ContextMenu: $showTopLoader2ContextMenu
+                    showTopLoader2ContextMenu: $showTopLoader2ContextMenu,
+                    onClosePopupMenus: {
+                        showContextMenu = false
+                        showTopLoader1ContextMenu = nil
+                        showTopLoader2ContextMenu = nil
+                    }
                 )
             }
             .background(
