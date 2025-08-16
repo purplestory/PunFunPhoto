@@ -32,6 +32,14 @@ struct CenterToastView: View {
             .transition(.opacity)
             .animation(.easeInOut, value: isVisible)
             .zIndex(9999)
+            .onAppear {
+                // 3초 후 자동으로 사라지도록 설정
+                DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
+                    withAnimation {
+                        isVisible = false
+                    }
+                }
+            }
         }
     }
     private var iconName: String {

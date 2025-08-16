@@ -67,6 +67,7 @@ struct PhotoEditorView: View {
     
     private func closeAllMenusExceptPhotoContext() {
         selectedMenu = nil
+        showContextMenu = false
         showTopLoader1ContextMenu = false
         showTopLoader2ContextMenu = false
     }
@@ -274,6 +275,56 @@ struct PhotoEditorView: View {
                 }
                 if showToast {
                     CenterToastView(message: toastMessage, type: .success, isVisible: $showToast)
+                }
+                
+                // 탑로더 1 컨텍스트 메뉴
+                if showTopLoader1ContextMenu == true {
+                    TopLoaderContextMenuOverlay(
+                        onDismiss: { showTopLoader1ContextMenu = false },
+                        targetFrame: boxFrames[1] ?? .zero,
+                        canvasFrame: canvasFrame,
+                        onTextAdd: { topLoader1.addText("", fontSize: 32, textColor: .black, style: .plain, strokeColor: .clear, boxSize: baseBoxSize) },
+                        onManage: { /* 탑로더 관리 로직 */ },
+                        onSave: { 
+                            topLoader1.saveTopLoader(name: "내 탑로더 \(Date().formatted(date: .numeric, time: .shortened))")
+                            showToast = true
+                            toastMessage = "탑로더가 저장되었습니다."
+                        },
+                        onToggleVisibility: { topLoader1.showTopLoader.toggle() },
+                        onRemove: { 
+                            topLoader1.detach()
+                            showToast = true
+                            toastMessage = "탑로더가 제거되었습니다."
+                        },
+                        isVisible: topLoader1.showTopLoader
+                    )
+                    .position(x: boxFrames[1]?.midX ?? 0, y: boxFrames[1]?.midY ?? 0)
+                    .zIndex(9998)
+                }
+                
+                // 탑로더 2 컨텍스트 메뉴
+                if showTopLoader2ContextMenu == true {
+                    TopLoaderContextMenuOverlay(
+                        onDismiss: { showTopLoader2ContextMenu = false },
+                        targetFrame: boxFrames[2] ?? .zero,
+                        canvasFrame: canvasFrame,
+                        onTextAdd: { topLoader2.addText("", fontSize: 32, textColor: .black, style: .plain, strokeColor: .clear, boxSize: baseBoxSize) },
+                        onManage: { /* 탑로더 관리 로직 */ },
+                        onSave: { 
+                            topLoader2.saveTopLoader(name: "내 탑로더 \(Date().formatted(date: .numeric, time: .shortened))")
+                            showToast = true
+                            toastMessage = "탑로더가 저장되었습니다."
+                        },
+                        onToggleVisibility: { topLoader2.showTopLoader.toggle() },
+                        onRemove: { 
+                            topLoader2.detach()
+                            showToast = true
+                            toastMessage = "탑로더가 제거되었습니다."
+                        },
+                        isVisible: topLoader2.showTopLoader
+                    )
+                    .position(x: boxFrames[2]?.midX ?? 0, y: boxFrames[2]?.midY ?? 0)
+                    .zIndex(9998)
                 }
                 FloatingToolbarView(
                     showSafeFrame: $showSafeFrame,

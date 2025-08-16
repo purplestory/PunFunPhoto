@@ -81,10 +81,12 @@ struct TopLoaderView: View {
                             .frame(width: boxSize.width+10, height: boxSize.height+10)
                         // 내부 컨텐츠 컨테이너
                         ZStack {
-                            // 탑로더 터치 영역 (빈 공간 레이어)
+                                                    // 탑로더 터치 영역 (실제 컨텐츠가 있는 영역만)
+                        if state.isAttached && state.showTopLoader {
+                            // 실제 탑로더 컨텐츠가 있을 때만 터치 영역 활성화
                             Color.clear
                                 .contentShape(Rectangle())
-                                .frame(width: boxSize.width, height: boxSize.height)
+                                .frame(width: min(boxSize.width, 200), height: min(boxSize.height, 150))
                                 .zIndex(10)
                                 .allowsHitTesting(true)
                                 .onTapGesture {
@@ -94,13 +96,14 @@ struct TopLoaderView: View {
                                         print("[DEBUG] 탑로더 메뉴 닫힘")
                                     } else {
                                         showTopLoaderContextMenu = true
-                                        print("[DEBUG] 탑로더 메뉴 열림")
+                                        print("[DEBUG] 탑로더 메뉴 열림 - 중앙 위치")
                                     }
                                     showObjectMenu = false
                                     selectedStickerId = nil
                                     selectedTextId = nil
                                     print("[DEBUG] [탑로더 터치] showTopLoaderContextMenu=\(showTopLoaderContextMenu)")
                                 }
+                        }
                             // 스티커들
                             ForEach(state.stickers) { sticker in
                                 stickerView(for: sticker)
@@ -408,47 +411,7 @@ struct TopLoaderView: View {
             print("[DEBUG] showObjectMenu changed: \(newValue)")
         }
 
-        // 탑로더 컨텍스트 메뉴 오버레이
-        .overlay(
-            Group {
-                if showTopLoaderContextMenu {
-                    VStack(alignment: .leading, spacing: 0) {
-                        ForEach(contextMenuItems()) { item in
-                            Button(action: {
-                                withAnimation {
-                                    item.action()
-                                    showTopLoaderContextMenu = false
-                                }
-                            }) {
-                                HStack(spacing: 8) {
-                                    Image(systemName: item.icon)
-                                        .imageScale(.medium)
-                                        .frame(width: 24)
-                                    Text(item.title)
-                                        .font(.system(size: 16, weight: .medium))
-                                        .lineLimit(1)
-                                }
-                                .frame(height: 36)
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                            }
-                            .buttonStyle(PlainButtonStyle())
-                            .disabled(!item.isEnabled)
-                        }
-                    }
-                    .padding(.vertical, 8)
-                    .padding(.horizontal, 12)
-                    .background(Color(.systemBackground).opacity(0.9))
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
-                    .shadow(color: Color.black.opacity(0.1), radius: 6, x: 0, y: 3)
-                    .frame(width: 200)
-                    .position(
-                        x: contextMenuPosition.x,
-                        y: contextMenuPosition.y
-                    )
-                    .zIndex(9998)
-                }
-            }
-        )
+
     }
     
 @ViewBuilder
@@ -564,52 +527,7 @@ private func stickerView(for sticker: StickerItem) -> some View {
     }
 }
     
-    private func contextMenuItems() -> [MenuItem] {
-        var items: [MenuItem] = []
-        
-        // 텍스트 추가
-        items.append(
-            MenuItem(title: "텍스트 추가", icon: "textformat") {
-                showTextEditor = true
-            }
-        )
-        
-        // 탑로더 관리
-        items.append(
-            MenuItem(title: "탑로더 관리", icon: "music.note") {
-                showTopLoaderLibrary = true
-            }
-        )
-        
-        // 탑로더 저장
-        items.append(
-            MenuItem(title: "탑로더 저장", icon: "square.and.arrow.down") {
-                // 탑로더 저장 로직
-                toastMessage = "탑로더가 저장되었습니다."
-                showToast = true
-            }
-        )
-        
-        // 탑로더 보기/가리기 메뉴
-        let showHideTitle = state.showTopLoader ? "탑로더 가리기" : "탑로더 보기"
-        let showHideIcon = state.showTopLoader ? "eye.slash" : "eye"
-        items.append(
-            MenuItem(title: showHideTitle, icon: showHideIcon) {
-                state.showTopLoader.toggle()
-            }
-        )
-        
-        // 탑로더 제거
-        items.append(
-            MenuItem(title: "탑로더 제거", icon: "xmark.circle.fill") {
-                state.detach()
-                toastMessage = "탑로더가 제거되었습니다."
-                showToast = true
-            }
-        )
-        
-        return items
-    }
+
 }
 
 #Preview {
