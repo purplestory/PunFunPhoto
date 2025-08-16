@@ -56,7 +56,9 @@ struct CanvasGroupView: View {
             showToast: $showToast,
             toastMessage: $toastMessage,
             selectedMenu: $selectedMenu,
-            showContextMenu: $showContextMenu
+            showContextMenu: $showContextMenu,
+            showTopLoader1ContextMenu: .constant(false),
+            showTopLoader2ContextMenu: .constant(false)
         )
         
         EditablePhotoBox(
