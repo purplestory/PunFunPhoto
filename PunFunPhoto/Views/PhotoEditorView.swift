@@ -143,6 +143,7 @@ struct PhotoEditorView: View {
                 },
                 onStickerTapped: { stickerId, position in
                     print("[DEBUG] PhotoEditorView - 스티커 터치됨: \(stickerId)")
+                    print("[DEBUG] 스티커 터치 전 상태 - showObjectMenu: \(showObjectMenu), selectedStickerId: \(String(describing: selectedStickerId))")
                     selectedStickerId = stickerId
                     selectedTextId = nil
                     objectMenuPosition = position
@@ -150,6 +151,7 @@ struct PhotoEditorView: View {
                     showContextMenu = false
                     showTopLoader1ContextMenu = false
                     showTopLoader2ContextMenu = false
+                    print("[DEBUG] 스티커 터치 후 상태 - showObjectMenu: \(showObjectMenu), selectedStickerId: \(String(describing: selectedStickerId))")
                 },
                 onTextTapped: { textId, position in
                     print("[DEBUG] PhotoEditorView - 텍스트 터치됨: \(textId)")
@@ -353,6 +355,7 @@ struct PhotoEditorView: View {
                 
                 // 스티커 메뉴
                 if showObjectMenu {
+                    print("[DEBUG] 스티커 메뉴 렌더링 - showObjectMenu: \(showObjectMenu)")
                     VStack(alignment: .leading, spacing: 0) {
                         if let textId = selectedTextId {
                             Button(action: {
@@ -432,13 +435,14 @@ struct PhotoEditorView: View {
                     showTopLoader2ContextMenu: $showTopLoader2ContextMenu,
                     onClosePopupMenus: {
                         print("[DEBUG] onClosePopupMenus 호출됨")
-                        print("[DEBUG] 닫기 전 상태 - showContextMenu: \(showContextMenu), showTopLoader1ContextMenu: \(showTopLoader1ContextMenu ?? false), showTopLoader2ContextMenu: \(showTopLoader2ContextMenu ?? false)")
+                        print("[DEBUG] 닫기 전 상태 - showContextMenu: \(showContextMenu), showTopLoader1ContextMenu: \(showTopLoader1ContextMenu ?? false), showTopLoader2ContextMenu: \(showTopLoader2ContextMenu ?? false), showObjectMenu: \(showObjectMenu)")
                         
                         showContextMenu = false
                         showTopLoader1ContextMenu = false
                         showTopLoader2ContextMenu = false
+                        showObjectMenu = false
                         
-                        print("[DEBUG] 닫기 후 상태 - showContextMenu: \(showContextMenu), showTopLoader1ContextMenu: \(showTopLoader1ContextMenu ?? false), showTopLoader2ContextMenu: \(showTopLoader2ContextMenu ?? false)")
+                        print("[DEBUG] 닫기 후 상태 - showContextMenu: \(showContextMenu), showTopLoader1ContextMenu: \(showTopLoader1ContextMenu ?? false), showTopLoader2ContextMenu: \(showTopLoader2ContextMenu ?? false), showObjectMenu: \(showObjectMenu)")
                     }
                 )
             }

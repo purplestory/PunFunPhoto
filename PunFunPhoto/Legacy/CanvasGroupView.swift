@@ -53,6 +53,8 @@ struct CanvasGroupView: View {
             onDuplicatePhoto1: onDuplicatePhoto1,
             onDuplicatePhoto2: onDuplicatePhoto2,
             onContextMenuRequested: onContextMenuRequested,
+            onStickerTapped: nil,
+            onTextTapped: nil,
             showToast: $showToast,
             toastMessage: $toastMessage,
             selectedMenu: $selectedMenu,
