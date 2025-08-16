@@ -86,10 +86,11 @@ struct TopLoaderView: View {
                             // 실제 탑로더 컨텐츠가 있을 때만 터치 영역 활성화
                             Color.clear
                                 .contentShape(Rectangle())
-                                .frame(width: min(boxSize.width, 200), height: min(boxSize.height, 150))
+                                .frame(width: boxSize.width, height: boxSize.height)
                                 .zIndex(100)
                                 .allowsHitTesting(true)
                                 .onTapGesture {
+                                    print("[DEBUG] 탑로더 터치 영역 감지됨")
                                     // 탑로더 메뉴 토글
                                     if showTopLoaderContextMenu {
                                         showTopLoaderContextMenu = false
