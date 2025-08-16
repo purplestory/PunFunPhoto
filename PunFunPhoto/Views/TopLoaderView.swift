@@ -245,7 +245,7 @@ struct TopLoaderView: View {
                     }
                     .frame(width: boxSize.width, height: boxSize.height)
                     .position(x: clampedX, y: clampedY)
-                    .zIndex(100)
+                    .zIndex(9998)
                     .onAppear {
                         print("[DEBUG] 컨텍스트 메뉴 뷰 onAppear, contextMenuPosition=\(contextMenuPosition)")
                     }
@@ -333,7 +333,7 @@ struct TopLoaderView: View {
                         .position(contextMenuPosition)
                     }
                     .frame(width: boxSize.width, height: boxSize.height)
-                    .zIndex(100)
+                    .zIndex(9998)
                 }
             }
             .coordinateSpace(name: "CanvasSpace")
