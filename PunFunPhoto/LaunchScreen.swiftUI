@@ -1,0 +1,13 @@
+import SwiftUI
+
+struct LaunchScreen: View {
+    var body: some View {
+        ZStack {
+            Color("AppBackgroundColor").ignoresSafeArea()
+            Image("SplashLogo")
+                .resizable()
+                .scaledToFit()
+                .frame(width: 180) // 로고 크기 조정
+        }
+    }
+}
