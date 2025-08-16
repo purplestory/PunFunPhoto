@@ -36,6 +36,10 @@ struct PhotoEditorView: View {
     @Binding var showTopLoader2ContextMenu: Bool?
     @State private var showTopLoaderLibrary = false
     @State private var selectedPhotoForTopLoader: PhotoState?
+    @State private var showObjectMenu = false
+    @State private var selectedTextId: UUID? = nil
+    @State private var selectedStickerId: UUID? = nil
+    @State private var objectMenuPosition: CGPoint = .zero
     
     private let baseCanvasSize = CGSize(width: 1800, height: 1200)
     private let baseBoxSize = CGSize(width: 685, height: 1063)
@@ -136,6 +140,26 @@ struct PhotoEditorView: View {
                     contextMenuTargetBoxIndex = boxIdx
                     contextMenuTargetFrame = frame
                     showContextMenu = true
+                },
+                onStickerTapped: { stickerId, position in
+                    print("[DEBUG] PhotoEditorView - 스티커 터치됨: \(stickerId)")
+                    selectedStickerId = stickerId
+                    selectedTextId = nil
+                    objectMenuPosition = position
+                    showObjectMenu = true
+                    showContextMenu = false
+                    showTopLoader1ContextMenu = false
+                    showTopLoader2ContextMenu = false
+                },
+                onTextTapped: { textId, position in
+                    print("[DEBUG] PhotoEditorView - 텍스트 터치됨: \(textId)")
+                    selectedTextId = textId
+                    selectedStickerId = nil
+                    objectMenuPosition = position
+                    showObjectMenu = true
+                    showContextMenu = false
+                    showTopLoader1ContextMenu = false
+                    showTopLoader2ContextMenu = false
                 },
                 showToast: $showToast,
                 toastMessage: $toastMessage,
@@ -326,6 +350,73 @@ struct PhotoEditorView: View {
                     .position(x: boxFrames[2]?.midX ?? 0, y: boxFrames[2]?.midY ?? 0)
                     .zIndex(9998)
                 }
+                
+                // 스티커 메뉴
+                if showObjectMenu {
+                    VStack(alignment: .leading, spacing: 0) {
+                        if let textId = selectedTextId {
+                            Button(action: {
+                                print("[DEBUG] 텍스트 수정 버튼 클릭됨")
+                                // 텍스트 수정 로직
+                                showObjectMenu = false
+                            }) {
+                                Label("텍스트 수정", systemImage: "pencil")
+                                    .font(.system(size: 16, weight: .medium))
+                                    .foregroundColor(.primary)
+                                    .padding(.horizontal, 6)
+                                    .padding(.vertical, 8)
+                                    .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
+                            }
+                            Divider().padding(.horizontal, 12)
+                            Button(action: {
+                                // 텍스트 삭제 로직
+                                showObjectMenu = false
+                            }) {
+                                Label("텍스트 삭제", systemImage: "trash")
+                                    .font(.system(size: 16, weight: .medium))
+                                    .foregroundColor(.red)
+                                    .padding(.horizontal, 6)
+                                    .padding(.vertical, 8)
+                                    .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
+                            }
+                        } else if let stickerId = selectedStickerId {
+                            Button(action: {
+                                // 크기 조절 로직
+                                showObjectMenu = false
+                            }) {
+                                Label("크기 조절", systemImage: "arrow.up.left.and.arrow.down.right")
+                                    .font(.system(size: 16, weight: .medium))
+                                    .foregroundColor(.primary)
+                                    .padding(.horizontal, 6)
+                                    .padding(.vertical, 8)
+                                    .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
+                            }
+                            Divider().padding(.horizontal, 12)
+                            Button(action: {
+                                // 스티커 삭제 로직
+                                showObjectMenu = false
+                            }) {
+                                Label("스티커 삭제", systemImage: "trash")
+                                    .font(.system(size: 16, weight: .medium))
+                                    .foregroundColor(.red)
+                                    .padding(.horizontal, 6)
+                                    .padding(.vertical, 8)
+                                    .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
+                            }
+                        }
+                    }
+                    .frame(alignment: .center)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 8)
+                    .background(Color(uiColor: .systemBackground))
+                    .cornerRadius(8)
+                    .shadow(radius: 10)
+                    .fixedSize(horizontal: true, vertical: false)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+                    .zIndex(9999)
+                    .position(x: objectMenuPosition.x, y: objectMenuPosition.y)
+                }
+                
                 FloatingToolbarView(
                     showSafeFrame: $showSafeFrame,
                     photo1: photo1,

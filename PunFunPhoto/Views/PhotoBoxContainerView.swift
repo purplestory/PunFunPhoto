@@ -25,6 +25,8 @@ struct PhotoBoxContainerView: View {
     let onDuplicatePhoto1: () -> Void
     let onDuplicatePhoto2: () -> Void
     let onContextMenuRequested: (Int, CGRect) -> Void
+    let onStickerTapped: ((UUID, CGPoint) -> Void)?
+    let onTextTapped: ((UUID, CGPoint) -> Void)?
     
     @Binding var showToast: Bool
     @Binding var toastMessage: String
@@ -124,7 +126,9 @@ struct PhotoBoxContainerView: View {
                             showToast: $showToast,
                             toastMessage: $toastMessage,
                             selectedMenu: $selectedMenu,
-                            showTopLoaderContextMenu: $showTopLoader1ContextMenu
+                            showTopLoaderContextMenu: $showTopLoader1ContextMenu,
+                            onStickerTapped: onStickerTapped,
+                            onTextTapped: onTextTapped
                         )
                         .onAppear {
                             print("[DEBUG] TopLoaderView 조건: isAttached=\(topLoader1.isAttached), showTopLoader=\(topLoader1.showTopLoader)")
@@ -148,7 +152,9 @@ struct PhotoBoxContainerView: View {
                             showToast: $showToast,
                             toastMessage: $toastMessage,
                             selectedMenu: $selectedMenu,
-                            showTopLoaderContextMenu: $showTopLoader2ContextMenu
+                            showTopLoaderContextMenu: $showTopLoader2ContextMenu,
+                            onStickerTapped: onStickerTapped,
+                            onTextTapped: onTextTapped
                         )
                         .onAppear {
                             print("[DEBUG] TopLoaderView 조건: isAttached=\(topLoader2.isAttached), showTopLoader=\(topLoader2.showTopLoader)")

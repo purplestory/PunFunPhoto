@@ -50,10 +50,14 @@ struct TopLoaderView: View {
     @State private var newTopLoaderName = ""
     @State private var lastEmptyTapPosition: CGPoint
     
+    // 스티커 터치 콜백
+    var onStickerTapped: ((UUID, CGPoint) -> Void)? = nil
+    var onTextTapped: ((UUID, CGPoint) -> Void)? = nil
+    
     // 원본 크기 기준 cornerRadius
     private let baseCornerRadius: CGFloat = 30
     
-    init(state: TopLoaderState, boxSize: CGSize, boxOrigin: CGPoint = .zero, scaleFactor: CGFloat = 1.0, showToast: Binding<Bool>, toastMessage: Binding<String>, selectedMenu: Binding<MenuType?>, showTopLoaderContextMenu: Binding<Bool>) {
+    init(state: TopLoaderState, boxSize: CGSize, boxOrigin: CGPoint = .zero, scaleFactor: CGFloat = 1.0, showToast: Binding<Bool>, toastMessage: Binding<String>, selectedMenu: Binding<MenuType?>, showTopLoaderContextMenu: Binding<Bool>, onStickerTapped: ((UUID, CGPoint) -> Void)? = nil, onTextTapped: ((UUID, CGPoint) -> Void)? = nil) {
         self.state = state
         self.boxSize = boxSize
         self.boxOrigin = boxOrigin
@@ -62,6 +66,8 @@ struct TopLoaderView: View {
         self._toastMessage = toastMessage
         self._selectedMenu = selectedMenu
         self._showTopLoaderContextMenu = showTopLoaderContextMenu
+        self.onStickerTapped = onStickerTapped
+        self.onTextTapped = onTextTapped
         // 박스 중앙으로 초기화
         self._lastEmptyTapPosition = State(initialValue: CGPoint(x: boxSize.width/2, y: boxSize.height/2))
     }
@@ -228,91 +234,7 @@ struct TopLoaderView: View {
                         print("[DEBUG] 컨텍스트 메뉴 뷰 onAppear, contextMenuPosition=\(contextMenuPosition)")
                     }
                 }
-                if showObjectMenu && !showContextMenu {
-                    // [스티커] 메뉴만!
-                    ZStack {
-                        Color.black.opacity(0.001)
-                            .onTapGesture {
-                                showObjectMenu = false
-                            }
-                            .zIndex(0)
-                            .allowsHitTesting(true)
-                        VStack(alignment: .leading, spacing: 0) {
-                            if let textId = selectedTextId {
-                                Button(action: {
-                                    print("[DEBUG] 텍스트 수정 버튼 클릭됨")
-                                    print("[DEBUG] selectedTextId: \(selectedTextId?.uuidString ?? "nil")")
-                                    print("[DEBUG] state.texts ids: \(state.texts.map { $0.id.uuidString })")
-                                    if let textId = selectedTextId,
-                                       let textItem = state.texts.first(where: { $0.id == textId }) {
-                                        editingTextItem = TextItem(
-                                            id: textItem.id,
-                                            text: textItem.text,
-                                            fontSize: textItem.fontSize,
-                                            textColor: textItem.textColor,
-                                            style: textItem.style,
-                                            strokeColor: textItem.strokeColor,
-                                            fontInfo: textItem.fontInfo,
-                                            highlightColor: textItem.highlightColor,
-                                            position: textItem.position,
-                                            rotation: textItem.rotation,
-                                            scale: textItem.scale
-                                        )
-                                        print("[DEBUG] editingTextItem 할당됨: \(editingTextItem?.text ?? "nil")")
-                                        selectedTextId = textId
-                                        state.selectedItemId = textId
-                                        showObjectMenu = false
-                                        showContextMenu = false
-                                        DispatchQueue.main.async {
-                                            showTextEditor = true
-                                            print("[DEBUG] showTextEditor = true")
-                                        }
-                                    } else {
-                                        print("[DEBUG] 텍스트 수정 진입 실패: 조건 불일치")
-                                    }
-                                }) {
-                                    Label("[스티커] 텍스트 수정", systemImage: "pencil")
-                                        .contextMenuLabelStyle()
-                                }
-                                Divider().padding(.horizontal, 12)
-                                Button(action: {
-                                    state.removeText(textId)
-                                    showObjectMenu = false
-                                }) {
-                                    Label("[스티커] 텍스트 삭제", systemImage: "trash")
-                                        .contextMenuLabelStyle(isDestructive: true)
-                                }
-                            } else if let stickerId = selectedStickerId {
-                                Button(action: {
-                                    // 크기 조절 로직 추가 예정
-                                }) {
-                                    Label("[스티커] 크기 조절", systemImage: "arrow.up.left.and.arrow.down.right")
-                                        .contextMenuLabelStyle()
-                                }
-                                Divider().padding(.horizontal, 12)
-                                Button(action: {
-                                    state.removeSticker(stickerId)
-                                    showObjectMenu = false
-                                }) {
-                                    Label("[스티커] 스티커 삭제", systemImage: "trash")
-                                        .contextMenuLabelStyle(isDestructive: true)
-                                }
-                            }
-                        }
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 8)
-                        .background(Color(uiColor: .systemBackground))
-                        .cornerRadius(8)
-                        .shadow(radius: 10)
-                        .fixedSize(horizontal: true, vertical: false)
-                        .scaleEffect(1 / scaleFactor)
-                        .zIndex(1)
-                        .allowsHitTesting(true)
-                        .position(contextMenuPosition)
-                    }
-                    .frame(width: boxSize.width, height: boxSize.height)
-                    .zIndex(9998)
-                }
+                // 스티커 메뉴는 PhotoEditorView에서 관리됨
             }
             .coordinateSpace(name: "CanvasSpace")
             .overlay(
@@ -459,12 +381,7 @@ private func textView(for textItem: TextItem, geometry: GeometryProxy) -> some V
         .onTapGesture {
             print("[DEBUG] textView onTapGesture: \(textItem.id)")
             print("[DEBUG] textItem position: \(textItem.position)")
-            contextMenuPosition = textItem.position
-            selectedTextId = textItem.id
-            showObjectMenu = true
-            showContextMenu = false
-            selectedStickerId = nil
-            print("[DEBUG] [텍스트스티커탭] contextMenuPosition=\(contextMenuPosition), showContextMenu=\(showContextMenu), showObjectMenu=\(showObjectMenu), selectedTextId=\(String(describing: selectedTextId)), selectedStickerId=\(String(describing: selectedStickerId))")
+            onTextTapped?(textItem.id, textItem.position)
         }
         .onLongPressGesture(minimumDuration: 0.5, maximumDistance: 10) {
             print("[DEBUG] textView onLongPressGesture: \(textItem.id)")
@@ -510,12 +427,7 @@ private func stickerView(for sticker: StickerItem) -> some View {
             .onTapGesture {
                 print("[DEBUG] stickerView onTapGesture: \(sticker.id)")
                 print("[DEBUG] sticker position: \(sticker.position)")
-                contextMenuPosition = sticker.position
-                selectedStickerId = sticker.id
-                showObjectMenu = true
-                showContextMenu = false
-                selectedTextId = nil
-                print("[DEBUG] [스티커탭] contextMenuPosition=\(contextMenuPosition), showContextMenu=\(showContextMenu), showObjectMenu=\(showObjectMenu), selectedTextId=\(String(describing: selectedTextId)), selectedStickerId=\(String(describing: selectedStickerId))")
+                onStickerTapped?(sticker.id, sticker.position)
             }
     }
 }
