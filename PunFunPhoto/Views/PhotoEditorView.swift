@@ -31,7 +31,7 @@ struct PhotoEditorView: View {
     @State private var showToast: Bool = false
     @State private var toastMessage: String = ""
     @State private var showContextMenu = false
-    @State private var selectedMenu: MenuType? = nil
+    @Binding var selectedMenu: MenuType?
     @Binding var showTopLoader1ContextMenu: Bool?
     @Binding var showTopLoader2ContextMenu: Bool?
     @State private var showTopLoaderLibrary = false

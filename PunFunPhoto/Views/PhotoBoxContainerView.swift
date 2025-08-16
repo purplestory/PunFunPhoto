@@ -124,7 +124,7 @@ struct PhotoBoxContainerView: View {
                             showToast: $showToast,
                             toastMessage: $toastMessage,
                             selectedMenu: $selectedMenu,
-                            showContextMenu: $showTopLoader1ContextMenu,
+                            showContextMenu: $showContextMenu,
                             showTopLoaderContextMenu: $showTopLoader1ContextMenu
                         )
                         // .contentShape(Rectangle())
@@ -173,7 +173,7 @@ struct PhotoBoxContainerView: View {
                             showToast: $showToast,
                             toastMessage: $toastMessage,
                             selectedMenu: $selectedMenu,
-                            showContextMenu: $showTopLoader2ContextMenu,
+                            showContextMenu: $showContextMenu,
                             showTopLoaderContextMenu: $showTopLoader2ContextMenu
                         )
                         // .contentShape(Rectangle())

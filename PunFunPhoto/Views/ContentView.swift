@@ -56,6 +56,7 @@ struct ContentView: View {
                             topLoader1: topLoader1,
                             topLoader2: topLoader2,
                             showPhotoPicker: $showPhotoPicker,
+                            selectedMenu: $selectedMenu,
                             showTopLoader1ContextMenu: $showTopLoader1ContextMenu,
                             showTopLoader2ContextMenu: $showTopLoader2ContextMenu
                         )

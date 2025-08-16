@@ -604,27 +604,53 @@ private func stickerView(for sticker: StickerItem) -> some View {
     private func contextMenuItems() -> [MenuItem] {
         var items: [MenuItem] = []
         
+        // 텍스트 추가
+        items.append(
+            MenuItem(title: "텍스트 추가", icon: "textformat") {
+                showTextEditor = true
+            }
+        )
+        
+        // 탑로더 관리
+        items.append(
+            MenuItem(title: "탑로더 관리", icon: "music.note") {
+                showTopLoaderLibrary = true
+            }
+        )
+        
+        // 탑로더 저장
+        items.append(
+            MenuItem(title: "탑로더 저장", icon: "square.and.arrow.down") {
+                // 탑로더 저장 로직
+                toastMessage = "탑로더가 저장되었습니다."
+                showToast = true
+            }
+        )
+        
         // 탑로더 보기/가리기 메뉴
         let showHideTitle = state.showTopLoader ? "탑로더 가리기" : "탑로더 보기"
         let showHideIcon = state.showTopLoader ? "eye.slash" : "eye"
         items.append(
             MenuItem(title: showHideTitle, icon: showHideIcon) {
                 state.showTopLoader.toggle()
-                // 탑로더를 가리면 포토박스 컨텍스트 메뉴로 전환 (이제 자동 전환 없음)
-                if !state.showTopLoader {
-                    showContextMenu = false
-                    selectedMenu = nil
-                }
             }
         )
         
-        // 나머지 메뉴 아이템들...
+        // 탑로더 제거
+        items.append(
+            MenuItem(title: "탑로더 제거", icon: "xmark.circle.fill") {
+                state.detach()
+                toastMessage = "탑로더가 제거되었습니다."
+                showToast = true
+            }
+        )
+        
         return items
     }
 }
 
 #Preview {
-    TopLoaderView(state: TopLoaderState(), boxSize: CGSize(width: 300, height: 400), showToast: .constant(false), toastMessage: .constant(""), selectedMenu: .constant(nil), showContextMenu: .constant(false))
+    TopLoaderView(state: TopLoaderState(), boxSize: CGSize(width: 300, height: 400), showToast: .constant(false), toastMessage: .constant(""), selectedMenu: .constant(nil), showContextMenu: .constant(false), showTopLoaderContextMenu: .constant(false))
         .background(Color.gray.opacity(0.2))
 }
 
