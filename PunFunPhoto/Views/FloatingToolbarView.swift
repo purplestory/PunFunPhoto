@@ -110,19 +110,16 @@ struct FloatingToolbarView: View {
                                     GeometryReader { geo in
                                         let toolbarRect = toolbarFrame
                                         ZStack(alignment: .topLeading) {
-                                            // 툴바 위쪽
-                                            Color.clear
-                                                // .contentShape(Rectangle())
-                                                .frame(height: max(toolbarRect.minY, 0))
-                                                .onTapGesture { withAnimation { selectedMenu = nil } }
+                                            // 전체 화면 배경
+                                            Color.black.opacity(0.001)
+                                                .contentShape(Rectangle())
+                                                .onTapGesture { 
+                                                    withAnimation { 
+                                                        selectedMenu = nil 
+                                                    } 
+                                                }
                                                 .zIndex(99)
-                                            // 툴바 아래쪽
-                                            Color.clear
-                                                // .contentShape(Rectangle())
-                                                .frame(height: max(geo.size.height - toolbarRect.maxY, 0))
-                                                .offset(y: toolbarRect.maxY)
-                                                .onTapGesture { withAnimation { selectedMenu = nil } }
-                                                .zIndex(99)
+                                            
                                             // 서브메뉴: 상단 기준 offset 정렬
                                             menuOverlay(for: selected)
                                                 .frame(width: 200)
