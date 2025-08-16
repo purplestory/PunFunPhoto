@@ -139,7 +139,15 @@ struct PhotoEditorView: View {
                 showToast: $showToast,
                 toastMessage: $toastMessage,
                 selectedMenu: $selectedMenu,
-                showContextMenu: $showContextMenu
+                showContextMenu: $showContextMenu,
+                showTopLoader1ContextMenu: Binding(
+                    get: { showTopLoader1ContextMenu ?? false },
+                    set: { showTopLoader1ContextMenu = $0 }
+                ),
+                showTopLoader2ContextMenu: Binding(
+                    get: { showTopLoader2ContextMenu ?? false },
+                    set: { showTopLoader2ContextMenu = $0 }
+                )
             )
             .cornerRadius(0)
             .frame(width: baseCanvasSize.width, height: baseCanvasSize.height)

@@ -30,13 +30,8 @@ struct PhotoBoxContainerView: View {
     @Binding var toastMessage: String
     @Binding var selectedMenu: MenuType?
     @Binding var showContextMenu: Bool
-
-    @State private var showTopLoader1ContextMenu: Bool = false {
-        didSet {
-            print("[DEBUG] showTopLoader1ContextMenu changed: \(showTopLoader1ContextMenu)")
-        }
-    }
-    @State private var showTopLoader2ContextMenu: Bool = false
+    @Binding var showTopLoader1ContextMenu: Bool
+    @Binding var showTopLoader2ContextMenu: Bool
     
     private var spacing: CGFloat {
         let baseSpacing = CanvasConstants.boxSpacing
