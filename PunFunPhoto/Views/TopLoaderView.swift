@@ -45,6 +45,7 @@ struct TopLoaderView: View {
     @Binding var selectedMenu: MenuType?
     @Binding var showTopLoaderContextMenu: Bool
     @State private var showTopLoaderLibrary = false
+    @State private var showContextMenu: Bool = false
     @State private var showSaveDialog = false
     @State private var newTopLoaderName = ""
     @State private var lastEmptyTapPosition: CGPoint
@@ -91,6 +92,14 @@ struct TopLoaderView: View {
                                     DragGesture(minimumDistance: 0, coordinateSpace: .local)
                                         .onEnded { value in
                                             let location = value.location
+                                            
+                                            // 탑로더 영역 내에서만 작동하도록 제한
+                                            let topLoaderFrame = CGRect(x: 0, y: 0, width: boxSize.width, height: boxSize.height)
+                                            guard topLoaderFrame.contains(location) else {
+                                                print("[DEBUG] 탑로더 영역 밖 터치 무시: location=\(location)")
+                                                return
+                                            }
+                                            
                                             // 더 엄밀한 hit test: 텍스트
                                             let isOnText = state.texts.contains { textItem in
                                                 let textFrame = CGRect(
