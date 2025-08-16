@@ -68,12 +68,10 @@ struct EditablePhotoBox: View {
                             .size(width: boxSize.width, height: boxSize.height))
                         .onTapGesture {
                             print("[EditablePhotoBox] 이미지 탭: boxIndex=\(boxIndex)")
-                            onTap() // 먼저 onTap 호출
-                            let globalFrame = geo.frame(in: .named("RootSpace"))
-                            onContextMenuRequested(globalFrame)
+                            onTap() // onTap에서 메뉴 처리를 모두 담당
                             selectedMenu = nil
                         }
-                        .zIndex(0)
+                        .zIndex(100) // 배경 터치보다 우선 처리
                         .transaction { $0.animation = nil }
                 } else {
                     RoundedRectangle(cornerRadius: cornerRadius)
@@ -97,7 +95,7 @@ struct EditablePhotoBox: View {
                             print("[EditablePhotoBox] 빈 박스 탭: boxIndex=\(boxIndex)")
                             onTap()
                         }
-                        .zIndex(0)
+                        .zIndex(100) // 배경 터치보다 우선 처리
                 }
 
                 // 흐림 오버레이: 커팅선 바깥 흐리게 (1mm margin)

@@ -78,6 +78,7 @@ struct FloatingToolbarView: View {
         self._showTopLoader2ContextMenu = showTopLoader2ContextMenu
         self.onMenuChange = onMenuChange
         self.onClosePopupMenus = onClosePopupMenus
+        print("[DEBUG] FloatingToolbarView init - onClosePopupMenus 콜백 저장됨: \(onClosePopupMenus != nil)")
     }
     
     private var isLandscape: Bool {
@@ -141,6 +142,8 @@ struct FloatingToolbarView: View {
             if let selected = selectedMenu {
                 GeometryReader { geo in
                     ZStack(alignment: .topLeading) {
+                        // 배경 터치 제거 - PhotoEditorView에서 처리
+                        
                         // 서브메뉴: 상단 기준 offset 정렬
                         menuOverlay(for: selected)
                             .frame(width: 200)
@@ -271,9 +274,6 @@ struct FloatingToolbarView: View {
         Button(action: {
             print("[DEBUG] 상단 메뉴 '\(menuType.title)' 터치됨")
             print("[DEBUG] 터치 전 상태 - selectedMenu: \(selectedMenu?.title ?? "nil")")
-            
-            // 포토카드나 탑로더 컨텍스트 메뉴가 열려있으면 먼저 닫기
-            onClosePopupMenus?()
             
             // 메뉴 전환 로직: 같은 메뉴를 터치하면 닫고, 다른 메뉴를 터치하면 바로 열기
             if selectedMenu == menuType {

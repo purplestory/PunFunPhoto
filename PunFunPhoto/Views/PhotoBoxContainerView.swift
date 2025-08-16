@@ -61,7 +61,6 @@ struct PhotoBoxContainerView: View {
             onDuplicate: onDuplicatePhoto1,
             onContextMenuRequested: { frame in
                 selectedMenu = nil
-                showContextMenu = false
                 showTopLoader1ContextMenu = nil
                 showTopLoader2ContextMenu = nil
                 onContextMenuRequested(1, frame)
@@ -90,7 +89,6 @@ struct PhotoBoxContainerView: View {
             onDuplicate: onDuplicatePhoto2,
             onContextMenuRequested: { frame in
                 selectedMenu = nil
-                showContextMenu = false
                 showTopLoader1ContextMenu = nil
                 showTopLoader2ContextMenu = nil
                 onContextMenuRequested(2, frame)

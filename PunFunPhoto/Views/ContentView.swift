@@ -108,21 +108,7 @@ struct ContentView: View {
                             showTopLoader2ContextMenu: $showTopLoader2ContextMenu,
                             showObjectMenu: $showObjectMenu
                         )
-                        FloatingToolbarView(
-                            showSafeFrame: $showSafeFrame,
-                            photo1: photo1,
-                            photo2: photo2,
-                            topLoader1: topLoader1,
-                            topLoader2: topLoader2,
-                            showPhotoPicker: $showPhotoPicker,
-                            photoPickerMode: $photoPickerMode,
-                            showAlreadySelectedAlert: $showAlreadySelectedAlert,
-                            selectedMenu: $selectedMenu,
-                            showContextMenu: $showContextMenu,
-                            showTopLoader1ContextMenu: $showTopLoader1ContextMenu,
-                            showTopLoader2ContextMenu: $showTopLoader2ContextMenu
-                        )
-                        .zIndex(999)
+                        // FloatingToolbarView는 PhotoEditorView 내부에서 처리됨
                     }
                 }
             }

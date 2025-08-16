@@ -2,7 +2,6 @@ import SwiftUI
 
 struct PhotoBoxContextMenuOverlay: View {
     @Binding var showSafeFrame: Bool
-    var onDismiss: () -> Void
     var targetFrame: CGRect
     let canvasFrame: CGRect
     var scaleFactor: CGFloat
@@ -19,6 +18,7 @@ struct PhotoBoxContextMenuOverlay: View {
     var onShowTopLoader: (() -> Void)? = nil
     var selectedPhoto: PhotoState? = nil
     var onShowTopLoaderMenu: ((PhotoState) -> Void)? = nil
+    var onDismiss: (() -> Void)? = nil
 //    @State private var selectedPhotoForTopLoader: PhotoState?
 //    @State private var showTopLoaderLibrary = false
 //
@@ -48,14 +48,7 @@ struct PhotoBoxContextMenuOverlay: View {
     var body: some View {
         GeometryReader { geo in
             ZStack {
-                // 배경: 메뉴 바깥을 탭하면 닫힘
-                Color.black.opacity(0.001)
-                    .contentShape(Rectangle())
-                    .onTapGesture {
-                        print("[DEBUG] PhotoBoxContextMenuOverlay - 배경 터치됨 - 메뉴 닫기")
-                        onDismiss()
-                    }
-                    .zIndex(0)
+                // 배경 터치 제거 - PhotoEditorView에서 처리
 
                 // 메뉴 본체: 중앙 정렬
                 VStack(spacing: 0) {
@@ -68,7 +61,6 @@ struct PhotoBoxContextMenuOverlay: View {
                         systemImage: "rectangle.dashed",
                         action: {
                             showSafeFrame.toggle()
-                            onDismiss()
                         }
                     )
                     Divider().padding(.horizontal, 12)
@@ -152,7 +144,7 @@ struct PhotoBoxContextMenuOverlay: View {
     ) -> some View {
         Button(action: {
             action()
-            onDismiss()
+            // 메뉴 아이템 액션만 실행, 메뉴 닫기는 것은 PhotoEditorView에서 처리
         }) {
             Label(title, systemImage: systemImage)
                 .font(.system(size: 16, weight: .medium))
