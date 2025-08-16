@@ -87,7 +87,7 @@ struct TopLoaderView: View {
                             Color.clear
                                 .contentShape(Rectangle())
                                 .frame(width: min(boxSize.width, 200), height: min(boxSize.height, 150))
-                                .zIndex(10)
+                                .zIndex(100)
                                 .allowsHitTesting(true)
                                 .onTapGesture {
                                     // 탑로더 메뉴 토글
@@ -474,17 +474,6 @@ private func textView(for textItem: TextItem, geometry: GeometryProxy) -> some V
                 showTextEditor = true
             }
         }
-        .highPriorityGesture(
-        TapGesture().onEnded {
-            print("[DEBUG] highPriorityGesture: text sticker tapped")
-            // 스티커 선택 로직
-            contextMenuPosition = textItem.position
-            selectedTextId = textItem.id
-            showObjectMenu = true
-            showContextMenu = false
-            selectedStickerId = nil
-        }
-    )
 }
 
     @ViewBuilder
