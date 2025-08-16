@@ -59,6 +59,12 @@ struct PhotoEditorView: View {
         showTopLoader2ContextMenu = false
     }
     
+    private func closeTopMenuOnly() {
+        selectedMenu = nil
+        showTopLoader1ContextMenu = false
+        showTopLoader2ContextMenu = false
+    }
+    
     // 메인 캔버스(포토박스, 프로젝트명 등)를 별도 뷰로 분리
     private func mainCanvas(scaleFactor: CGFloat) -> some View {
         ZStack {
@@ -79,7 +85,7 @@ struct PhotoEditorView: View {
                 contextMenuTargetFrame: contextMenuTargetFrame,
                 contextMenuTargetBoxIndex: $contextMenuTargetBoxIndex,
                 onTapPhoto1: {
-                    closeAllMenus()
+                    closeTopMenuOnly()
                     if photo1.originalImage == nil && photo2.originalImage == nil {
                         photoPickerMode = .비어있는
                         selectedBoxIndex = nil
@@ -97,7 +103,7 @@ struct PhotoEditorView: View {
                     }
                 },
                 onTapPhoto2: {
-                    closeAllMenus()
+                    closeTopMenuOnly()
                     if photo1.originalImage == nil && photo2.originalImage == nil {
                         photoPickerMode = .비어있는
                         selectedBoxIndex = nil
