@@ -81,69 +81,26 @@ struct TopLoaderView: View {
                             .frame(width: boxSize.width+10, height: boxSize.height+10)
                         // 내부 컨텐츠 컨테이너
                         ZStack {
-                            // DragGesture가 걸린 빈 공간 레이어 (항상 맨 아래)
+                            // 탑로더 터치 영역 (빈 공간 레이어)
                             Color.clear
-                            // Color.red.opacity(0.1) 
                                 .contentShape(Rectangle())
                                 .frame(width: boxSize.width, height: boxSize.height)
                                 .zIndex(10)
                                 .allowsHitTesting(true)
-                                .gesture(
-                                    DragGesture(minimumDistance: 0, coordinateSpace: .local)
-                                        .onEnded { value in
-                                            let location = value.location
-                                            
-                                            // 탑로더 영역 내에서만 작동하도록 제한
-                                            let topLoaderFrame = CGRect(x: 0, y: 0, width: boxSize.width, height: boxSize.height)
-                                            guard topLoaderFrame.contains(location) else {
-                                                print("[DEBUG] 탑로더 영역 밖 터치 무시: location=\(location)")
-                                                return
-                                            }
-                                            
-                                            // 더 엄밀한 hit test: 텍스트
-                                            let isOnText = state.texts.contains { textItem in
-                                                let textFrame = CGRect(
-                                                    x: textItem.position.x - CGFloat(textItem.fontSize)/2,
-                                                    y: textItem.position.y - CGFloat(textItem.fontSize)/2,
-                                                    width: CGFloat(textItem.fontSize),
-                                                    height: CGFloat(textItem.fontSize)
-                                                )
-                                                return textFrame.contains(location)
-                                            }
-                                            // 더 엄밀한 hit test: 스티커
-                                            let isOnSticker = state.stickers.contains { sticker in
-                                                let stickerFrame = CGRect(
-                                                    x: sticker.position.x - sticker.size/2,
-                                                    y: sticker.position.y - sticker.size/2,
-                                                    width: sticker.size,
-                                                    height: sticker.size
-                                                )
-                                                return stickerFrame.contains(location)
-                                            }
-                                            print("[DEBUG] DragGesture: location=\(location), isOnText=\(isOnText), isOnSticker=\(isOnSticker)")
-                                            // 빈 공간을 탭한 경우에만 메뉴 상태 갱신
-                                            if !isOnText && !isOnSticker {
-                                                contextMenuPosition = location
-                                                lastEmptyTapPosition = location
-                                                // 현재 메뉴가 열려있으면 닫기, 닫혀있으면 열기
-                                                if showTopLoaderContextMenu {
-                                                    showTopLoaderContextMenu = false
-                                                    print("[DEBUG] 탑로더 메뉴 닫힘")
-                                                } else {
-                                                    showTopLoaderContextMenu = true
-                                                    print("[DEBUG] 탑로더 메뉴 열림")
-                                                }
-                                                showObjectMenu = false
-                                                selectedStickerId = nil
-                                                selectedTextId = nil
-                                                print("[DEBUG] [빈공간탭] contextMenuPosition=\(contextMenuPosition), showTopLoaderContextMenu=\(showTopLoaderContextMenu), showObjectMenu=\(showObjectMenu), selectedTextId=\(String(describing: selectedTextId)), selectedStickerId=\(String(describing: selectedStickerId))")
-                                            } else {
-                                                // 스티커/텍스트 위를 탭한 경우에는 DragGesture에서 아무 동작도 하지 않음
-                                                print("[DEBUG] [스티커/텍스트 hit] DragGesture 무시: location=\(location)")
-                                            }
-                                            print("[DEBUG] DragGesture: location=\(value.location)")
-                                        }
-                                )
+                                .onTapGesture {
+                                    // 탑로더 메뉴 토글
+                                    if showTopLoaderContextMenu {
+                                        showTopLoaderContextMenu = false
+                                        print("[DEBUG] 탑로더 메뉴 닫힘")
+                                    } else {
+                                        showTopLoaderContextMenu = true
+                                        print("[DEBUG] 탑로더 메뉴 열림")
+                                    }
+                                    showObjectMenu = false
+                                    selectedStickerId = nil
+                                    selectedTextId = nil
+                                    print("[DEBUG] [탑로더 터치] showTopLoaderContextMenu=\(showTopLoaderContextMenu)")
+                                }
                             // 스티커들
                             ForEach(state.stickers) { sticker in
                                 stickerView(for: sticker)
@@ -463,30 +420,30 @@ struct TopLoaderView: View {
                                     showTopLoaderContextMenu = false
                                 }
                             }) {
-                                HStack(spacing: 8 * scaleFactor) {
+                                HStack(spacing: 8) {
                                     Image(systemName: item.icon)
                                         .imageScale(.medium)
-                                        .frame(width: 24 * scaleFactor)
+                                        .frame(width: 24)
                                     Text(item.title)
-                                        .font(.system(size: 16 * scaleFactor, weight: .medium))
+                                        .font(.system(size: 16, weight: .medium))
                                         .lineLimit(1)
                                 }
-                                .frame(height: 36 * scaleFactor)
+                                .frame(height: 36)
                                 .frame(maxWidth: .infinity, alignment: .leading)
                             }
                             .buttonStyle(PlainButtonStyle())
                             .disabled(!item.isEnabled)
                         }
                     }
-                    .padding(.vertical, 8 * scaleFactor)
-                    .padding(.horizontal, 12 * scaleFactor)
+                    .padding(.vertical, 8)
+                    .padding(.horizontal, 12)
                     .background(Color(.systemBackground).opacity(0.9))
-                    .clipShape(RoundedRectangle(cornerRadius: 12 * scaleFactor))
-                    .shadow(color: Color.black.opacity(0.1), radius: 6 * scaleFactor, x: 0, y: 3 * scaleFactor)
-                    .frame(width: 200 * scaleFactor)
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                    .shadow(color: Color.black.opacity(0.1), radius: 6, x: 0, y: 3)
+                    .frame(width: 200)
                     .position(
-                        x: contextMenuPosition.x * scaleFactor,
-                        y: contextMenuPosition.y * scaleFactor
+                        x: contextMenuPosition.x,
+                        y: contextMenuPosition.y
                     )
                     .zIndex(9998)
                 }
