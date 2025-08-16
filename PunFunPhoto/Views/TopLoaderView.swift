@@ -508,11 +508,14 @@ private func stickerView(for sticker: StickerItem) -> some View {
             .simultaneousGesture(rotationGesture)
             .simultaneousGesture(magnificationGesture)
             .onTapGesture {
+                print("[DEBUG] stickerView onTapGesture: \(sticker.id)")
+                print("[DEBUG] sticker position: \(sticker.position)")
                 contextMenuPosition = sticker.position
                 selectedStickerId = sticker.id
                 showObjectMenu = true
                 showContextMenu = false
                 selectedTextId = nil
+                print("[DEBUG] [스티커탭] contextMenuPosition=\(contextMenuPosition), showContextMenu=\(showContextMenu), showObjectMenu=\(showObjectMenu), selectedTextId=\(String(describing: selectedTextId)), selectedStickerId=\(String(describing: selectedStickerId))")
             }
     }
 }
