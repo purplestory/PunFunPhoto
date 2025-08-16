@@ -30,16 +30,25 @@ struct PhotoEditorView: View {
     @State private var showAlreadySelectedAlert = false
     @State private var showToast: Bool = false
     @State private var toastMessage: String = ""
-    @State private var showContextMenu = false
+    @Binding var showContextMenu: Bool
     @Binding var selectedMenu: MenuType?
     @Binding var showTopLoader1ContextMenu: Bool?
     @Binding var showTopLoader2ContextMenu: Bool?
     @State private var showTopLoaderLibrary = false
     @State private var selectedPhotoForTopLoader: PhotoState?
-    @State private var showObjectMenu = false
+    @Binding var showObjectMenu: Bool
     @State private var selectedTextId: UUID? = nil
     @State private var selectedStickerId: UUID? = nil
     @State private var objectMenuPosition: CGPoint = .zero
+    
+    // 컨텍스트 메뉴 타입을 정의
+    enum ContextMenuType: Equatable {
+        case photoBox(Int)  // 포토박스 번호
+        case topLoader(Int) // 탑로더 번호
+        case object         // 스티커/텍스트
+    }
+    
+    @State private var activeContextMenu: ContextMenuType? = nil
     
     private let baseCanvasSize = CGSize(width: 1800, height: 1200)
     private let baseBoxSize = CGSize(width: 685, height: 1063)
@@ -57,23 +66,28 @@ struct PhotoEditorView: View {
     private var unclampedY: CGFloat { contextMenuTargetFrame.midY + rootOrigin.y }
     
     private func closeAllMenus() {
+        print("[DEBUG] 🔍 PhotoEditorView - closeAllMenus() 호출됨")
         selectedMenu = nil
         showContextMenu = false
-        showTopLoader1ContextMenu = false
-        showTopLoader2ContextMenu = false
+        showTopLoader1ContextMenu = nil
+        showTopLoader2ContextMenu = nil
+        showObjectMenu = false
     }
     
     private func closeTopMenuOnly() {
+        print("[DEBUG] 🔍 PhotoEditorView - closeTopMenuOnly() 호출됨")
         selectedMenu = nil
-        showTopLoader1ContextMenu = false
-        showTopLoader2ContextMenu = false
+        showTopLoader1ContextMenu = nil
+        showTopLoader2ContextMenu = nil
     }
     
     private func closeAllMenusExceptPhotoContext() {
+        print("[DEBUG] 🔍 PhotoEditorView - closeAllMenusExceptPhotoContext() 호출됨")
         selectedMenu = nil
         showContextMenu = false
-        showTopLoader1ContextMenu = false
-        showTopLoader2ContextMenu = false
+        showTopLoader1ContextMenu = nil
+        showTopLoader2ContextMenu = nil
+        showObjectMenu = false
     }
     
     // 메인 캔버스(포토박스, 프로젝트명 등)를 별도 뷰로 분리
@@ -96,7 +110,8 @@ struct PhotoEditorView: View {
                 contextMenuTargetFrame: contextMenuTargetFrame,
                 contextMenuTargetBoxIndex: $contextMenuTargetBoxIndex,
                 onTapPhoto1: {
-                    closeAllMenusExceptPhotoContext()
+                    print("[DEBUG] 🔥 PhotoEditorView - 포토박스1 터치됨")
+                    
                     if photo1.originalImage == nil && photo2.originalImage == nil {
                         photoPickerMode = .비어있는
                         selectedBoxIndex = nil
@@ -106,15 +121,27 @@ struct PhotoEditorView: View {
                         selectedBoxIndex = 1
                         showPhotoPicker = true
                     } else if photo1.originalImage != nil {
-                        contextMenuTargetBoxIndex = 1
-                        if let frame = boxFrames[1] {
-                            contextMenuTargetFrame = frame
-                            showContextMenu = true
+                        // 상단 툴바 메뉴처럼 작동: 같은 메뉴를 터치하면 닫고, 다른 메뉴를 터치하면 전환
+                        if activeContextMenu == .photoBox(1) {
+                            // 같은 포토박스 메뉴를 터치하면 닫기
+                            activeContextMenu = nil
+                            showContextMenu = false
+                            print("[DEBUG] 🔥 포토박스1 메뉴 닫힘")
+                        } else {
+                            // 다른 메뉴를 터치하면 기존 메뉴를 닫고 새 메뉴 열기
+                            activeContextMenu = .photoBox(1)
+                            contextMenuTargetBoxIndex = 1
+                            if let frame = boxFrames[1] {
+                                contextMenuTargetFrame = frame
+                                showContextMenu = true
+                                print("[DEBUG] 🔥 포토박스1 메뉴 열림")
+                            }
                         }
                     }
                 },
                 onTapPhoto2: {
-                    closeAllMenusExceptPhotoContext()
+                    print("[DEBUG] 🔥 PhotoEditorView - 포토박스2 터치됨")
+                    
                     if photo1.originalImage == nil && photo2.originalImage == nil {
                         photoPickerMode = .비어있는
                         selectedBoxIndex = nil
@@ -124,10 +151,21 @@ struct PhotoEditorView: View {
                         selectedBoxIndex = 2
                         showPhotoPicker = true
                     } else if photo2.originalImage != nil {
-                        contextMenuTargetBoxIndex = 2
-                        if let frame = boxFrames[2] {
-                            contextMenuTargetFrame = frame
-                            showContextMenu = true
+                        // 상단 툴바 메뉴처럼 작동: 같은 메뉴를 터치하면 닫고, 다른 메뉴를 터치하면 전환
+                        if activeContextMenu == .photoBox(2) {
+                            // 같은 포토박스 메뉴를 터치하면 닫기
+                            activeContextMenu = nil
+                            showContextMenu = false
+                            print("[DEBUG] 🔥 포토박스2 메뉴 닫힘")
+                        } else {
+                            // 다른 메뉴를 터치하면 기존 메뉴를 닫고 새 메뉴 열기
+                            activeContextMenu = .photoBox(2)
+                            contextMenuTargetBoxIndex = 2
+                            if let frame = boxFrames[2] {
+                                contextMenuTargetFrame = frame
+                                showContextMenu = true
+                                print("[DEBUG] 🔥 포토박스2 메뉴 열림")
+                            }
                         }
                     }
                 },
@@ -136,33 +174,60 @@ struct PhotoEditorView: View {
                 onDuplicatePhoto1: { duplicatePhoto(from: photo1, to: photo2) },
                 onDuplicatePhoto2: { duplicatePhoto(from: photo2, to: photo1) },
                 onContextMenuRequested: { boxIdx, frame in
-                    closeAllMenus()
-                    contextMenuTargetBoxIndex = boxIdx
-                    contextMenuTargetFrame = frame
-                    showContextMenu = true
+                    // 상단 툴바 메뉴처럼 작동: 같은 메뉴를 터치하면 닫고, 다른 메뉴를 터치하면 전환
+                    if activeContextMenu == .photoBox(boxIdx) {
+                        // 같은 포토박스 메뉴를 터치하면 닫기
+                        activeContextMenu = nil
+                        showContextMenu = false
+                        print("[DEBUG] 🔥 포토박스\(boxIdx) 메뉴 닫힘")
+                    } else {
+                        // 다른 메뉴를 터치하면 기존 메뉴를 닫고 새 메뉴 열기
+                        activeContextMenu = .photoBox(boxIdx)
+                        contextMenuTargetBoxIndex = boxIdx
+                        contextMenuTargetFrame = frame
+                        showContextMenu = true
+                        print("[DEBUG] 🔥 포토박스\(boxIdx) 메뉴 열림")
+                    }
                 },
                 onStickerTapped: { stickerId, position in
                     print("[DEBUG] PhotoEditorView - 스티커 터치됨: \(stickerId)")
-                    print("[DEBUG] 스티커 터치 전 상태 - showObjectMenu: \(showObjectMenu), selectedStickerId: \(String(describing: selectedStickerId))")
-                    selectedStickerId = stickerId
-                    selectedTextId = nil
-                    objectMenuPosition = position
-                    showObjectMenu = true
-                    showContextMenu = false
-                    showTopLoader1ContextMenu = false
-                    showTopLoader2ContextMenu = false
-                    print("[DEBUG] 스티커 터치 후 상태 - showObjectMenu: \(showObjectMenu), selectedStickerId: \(String(describing: selectedStickerId))")
+                    
+                    // 상단 툴바 메뉴처럼 작동: 같은 메뉴를 터치하면 닫고, 다른 메뉴를 터치하면 전환
+                    if activeContextMenu == .object {
+                        // 같은 오브젝트 메뉴를 터치하면 닫기
+                        activeContextMenu = nil
+                        showObjectMenu = false
+                        print("[DEBUG] 🔥 스티커 메뉴 닫힘")
+                    } else {
+                        // 다른 메뉴를 터치하면 기존 메뉴를 닫고 새 메뉴 열기
+                        activeContextMenu = .object
+                        selectedStickerId = stickerId
+                        selectedTextId = nil
+                        objectMenuPosition = position
+                        showObjectMenu = true
+                        print("[DEBUG] 🔥 스티커 메뉴 열림")
+                    }
                 },
                 onTextTapped: { textId, position in
                     print("[DEBUG] PhotoEditorView - 텍스트 터치됨: \(textId)")
-                    selectedTextId = textId
-                    selectedStickerId = nil
-                    objectMenuPosition = position
-                    showObjectMenu = true
-                    showContextMenu = false
-                    showTopLoader1ContextMenu = false
-                    showTopLoader2ContextMenu = false
+                    
+                    // 상단 툴바 메뉴처럼 작동: 같은 메뉴를 터치하면 닫고, 다른 메뉴를 터치하면 전환
+                    if activeContextMenu == .object {
+                        // 같은 오브젝트 메뉴를 터치하면 닫기
+                        activeContextMenu = nil
+                        showObjectMenu = false
+                        print("[DEBUG] 🔥 텍스트 메뉴 닫힘")
+                    } else {
+                        // 다른 메뉴를 터치하면 기존 메뉴를 닫고 새 메뉴 열기
+                        activeContextMenu = .object
+                        selectedTextId = textId
+                        selectedStickerId = nil
+                        objectMenuPosition = position
+                        showObjectMenu = true
+                        print("[DEBUG] 🔥 텍스트 메뉴 열림")
+                    }
                 },
+
                 showToast: $showToast,
                 toastMessage: $toastMessage,
                 selectedMenu: $selectedMenu,
@@ -174,7 +239,39 @@ struct PhotoEditorView: View {
                 showTopLoader2ContextMenu: Binding(
                     get: { showTopLoader2ContextMenu ?? false },
                     set: { showTopLoader2ContextMenu = $0 }
-                )
+                ),
+                onTopLoader1Tapped: {
+                    print("[DEBUG] PhotoEditorView - 탑로더1 터치됨")
+                    
+                    // 상단 툴바 메뉴처럼 작동: 같은 메뉴를 터치하면 닫고, 다른 메뉴를 터치하면 전환
+                    if activeContextMenu == .topLoader(1) {
+                        // 같은 탑로더 메뉴를 터치하면 닫기
+                        activeContextMenu = nil
+                        showTopLoader1ContextMenu = nil
+                        print("[DEBUG] 🔥 탑로더1 메뉴 닫힘")
+                    } else {
+                        // 다른 메뉴를 터치하면 기존 메뉴를 닫고 새 메뉴 열기
+                        activeContextMenu = .topLoader(1)
+                        showTopLoader1ContextMenu = true
+                        print("[DEBUG] 🔥 탑로더1 메뉴 열림")
+                    }
+                },
+                onTopLoader2Tapped: {
+                    print("[DEBUG] PhotoEditorView - 탑로더2 터치됨")
+                    
+                    // 상단 툴바 메뉴처럼 작동: 같은 메뉴를 터치하면 닫고, 다른 메뉴를 터치하면 전환
+                    if activeContextMenu == .topLoader(2) {
+                        // 같은 탑로더 메뉴를 터치하면 닫기
+                        activeContextMenu = nil
+                        showTopLoader2ContextMenu = nil
+                        print("[DEBUG] 🔥 탑로더2 메뉴 닫힘")
+                    } else {
+                        // 다른 메뉴를 터치하면 기존 메뉴를 닫고 새 메뉴 열기
+                        activeContextMenu = .topLoader(2)
+                        showTopLoader2ContextMenu = true
+                        print("[DEBUG] 🔥 탑로더2 메뉴 열림")
+                    }
+                }
             )
             .cornerRadius(0)
             .frame(width: baseCanvasSize.width, height: baseCanvasSize.height)
@@ -183,15 +280,6 @@ struct PhotoEditorView: View {
             }
             .onPreferenceChange(ViewPreferenceKeys.PhotoBoxFrameKey.self) { frames in
                 self.boxFrames = frames
-                if let idx = contextMenuTargetBoxIndex, showContextMenu == false {
-                    contextMenuTargetFrame = frames[idx] ?? .zero
-                    DispatchQueue.main.async {
-                        showContextMenu = true
-                        showTopLoader1ContextMenu = false
-                        showTopLoader2ContextMenu = false
-                        selectedMenu = nil
-                    }
-                }
             }
 
             Text(currentProjectName)
@@ -234,26 +322,26 @@ struct PhotoEditorView: View {
                     selectedBoxIndex = 2
                     showPhotoPicker = true
                 }
-                showContextMenu = false
+                // showContextMenu = false 제거 - 다른 메뉴들은 PhotoEditorView에서 처리
             }
             let onReset: () -> Void = {
                 if boxIndex == 1 { photo1.reset() }
                 else { photo2.reset() }
-                showContextMenu = false
+                // showContextMenu = false 제거 - 다른 메뉴들은 PhotoEditorView에서 처리
             }
             let onDuplicate: () -> Void = {
                 if boxIndex == 1 { duplicatePhoto(from: photo1, to: photo2) }
                 else { duplicatePhoto(from: photo2, to: photo1) }
-                showContextMenu = false
+                // showContextMenu = false 제거 - 다른 메뉴들은 PhotoEditorView에서 처리
             }
             let onSwap: () -> Void = {
                 swapPhotos()
-                showContextMenu = false
+                // showContextMenu = false 제거 - 다른 메뉴들은 PhotoEditorView에서 처리
             }
             let onDelete: () -> Void = {
                 if boxIndex == 1 { photo1.originalImage = nil }
                 else { photo2.originalImage = nil }
-                showContextMenu = false
+                // showContextMenu = false 제거 - 다른 메뉴들은 PhotoEditorView에서 처리
             }
 
             ZStack {
@@ -265,13 +353,25 @@ struct PhotoEditorView: View {
                 }
                 .frame(maxWidth: .infinity)
                 .zIndex(0)
-                // .contentShape(Rectangle())
+                
+                // 메뉴가 열려있을 때만 배경 터치 처리
+                if selectedMenu != nil {
+                    Color.black.opacity(0.001)
+                        .contentShape(Rectangle())
+                        .onTapGesture {
+                            print("[DEBUG] PhotoEditorView - 전체 화면 배경 터치됨 - 메뉴 닫기")
+                            selectedMenu = nil
+                        }
+                        .zIndex(98)
+                }
+                
+
 
                 if showMenu, let boxIndex = boxIndex {
                     PhotoBoxContextMenuOverlay(
                         showSafeFrame: $showSafeFrame,
                         onDismiss: {
-                            showContextMenu = false
+                            showContextMenu = false  // 포토카드 메뉴 닫기
                             selectedMenu = nil
                         },
                         targetFrame: contextMenuTargetFrame,
@@ -436,15 +536,12 @@ struct PhotoEditorView: View {
                     showTopLoader1ContextMenu: $showTopLoader1ContextMenu,
                     showTopLoader2ContextMenu: $showTopLoader2ContextMenu,
                     onClosePopupMenus: {
-                        print("[DEBUG] onClosePopupMenus 호출됨")
-                        print("[DEBUG] 닫기 전 상태 - showContextMenu: \(showContextMenu), showTopLoader1ContextMenu: \(showTopLoader1ContextMenu ?? false), showTopLoader2ContextMenu: \(showTopLoader2ContextMenu ?? false), showObjectMenu: \(showObjectMenu)")
-                        
+                        print("[DEBUG] 🔥 PhotoEditorView onClosePopupMenus 콜백 실행됨!")
                         showContextMenu = false
-                        showTopLoader1ContextMenu = false
-                        showTopLoader2ContextMenu = false
+                        showTopLoader1ContextMenu = nil
+                        showTopLoader2ContextMenu = nil
                         showObjectMenu = false
-                        
-                        print("[DEBUG] 닫기 후 상태 - showContextMenu: \(showContextMenu), showTopLoader1ContextMenu: \(showTopLoader1ContextMenu ?? false), showTopLoader2ContextMenu: \(showTopLoader2ContextMenu ?? false), showObjectMenu: \(showObjectMenu)")
+                        activeContextMenu = nil  // 활성 컨텍스트 메뉴 상태도 초기화
                     }
                 )
             }
@@ -560,8 +657,10 @@ struct PhotoEditorView: View {
         topLoader1: TopLoaderState(),
         topLoader2: TopLoaderState(),
         showPhotoPicker: .constant(false),
+        showContextMenu: .constant(false),
         selectedMenu: .constant(nil),
         showTopLoader1ContextMenu: .constant(false as Bool?),
-        showTopLoader2ContextMenu: .constant(false as Bool?)
+        showTopLoader2ContextMenu: .constant(false as Bool?),
+        showObjectMenu: .constant(false)
     )
 }

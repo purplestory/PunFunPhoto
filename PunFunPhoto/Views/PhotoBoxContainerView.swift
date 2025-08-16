@@ -27,13 +27,15 @@ struct PhotoBoxContainerView: View {
     let onContextMenuRequested: (Int, CGRect) -> Void
     let onStickerTapped: ((UUID, CGPoint) -> Void)?
     let onTextTapped: ((UUID, CGPoint) -> Void)?
+    let onTopLoader1Tapped: (() -> Void)?
+    let onTopLoader2Tapped: (() -> Void)?
     
     @Binding var showToast: Bool
     @Binding var toastMessage: String
     @Binding var selectedMenu: MenuType?
     @Binding var showContextMenu: Bool
-    @Binding var showTopLoader1ContextMenu: Bool
-    @Binding var showTopLoader2ContextMenu: Bool
+    @Binding var showTopLoader1ContextMenu: Bool?
+    @Binding var showTopLoader2ContextMenu: Bool?
     
     private var spacing: CGFloat {
         let baseSpacing = CanvasConstants.boxSpacing
@@ -51,10 +53,8 @@ struct PhotoBoxContainerView: View {
             isPrimary: true,
             boxIndex: 1,
             onTap: {
-                selectedMenu = nil
-                showContextMenu = false
-                showTopLoader1ContextMenu = false
-                showTopLoader2ContextMenu = false
+                print("[DEBUG] 🔥 PhotoBoxContainerView - 포토박스1 onTap 호출됨")
+                // PhotoEditorView의 onTapPhoto1에서 다른 메뉴들을 닫는 로직이 있으므로 여기서는 제거
                 onTapPhoto1()
             },
             onSwap: onSwapPhoto1,
@@ -62,8 +62,8 @@ struct PhotoBoxContainerView: View {
             onContextMenuRequested: { frame in
                 selectedMenu = nil
                 showContextMenu = false
-                showTopLoader1ContextMenu = false
-                showTopLoader2ContextMenu = false
+                showTopLoader1ContextMenu = nil
+                showTopLoader2ContextMenu = nil
                 onContextMenuRequested(1, frame)
             },
             spacing: spacing,
@@ -82,10 +82,8 @@ struct PhotoBoxContainerView: View {
             isPrimary: false,
             boxIndex: 2,
             onTap: {
-                selectedMenu = nil
-                showContextMenu = false
-                showTopLoader1ContextMenu = false
-                showTopLoader2ContextMenu = false
+                print("[DEBUG] 🔥 PhotoBoxContainerView - 포토박스2 onTap 호출됨")
+                // PhotoEditorView의 onTapPhoto2에서 다른 메뉴들을 닫는 로직이 있으므로 여기서는 제거
                 onTapPhoto2()
             },
             onSwap: onSwapPhoto2,
@@ -93,8 +91,8 @@ struct PhotoBoxContainerView: View {
             onContextMenuRequested: { frame in
                 selectedMenu = nil
                 showContextMenu = false
-                showTopLoader1ContextMenu = false
-                showTopLoader2ContextMenu = false
+                showTopLoader1ContextMenu = nil
+                showTopLoader2ContextMenu = nil
                 onContextMenuRequested(2, frame)
             },
             spacing: spacing,
@@ -128,7 +126,10 @@ struct PhotoBoxContainerView: View {
                             selectedMenu: $selectedMenu,
                             showTopLoaderContextMenu: $showTopLoader1ContextMenu,
                             onStickerTapped: onStickerTapped,
-                            onTextTapped: onTextTapped
+                            onTextTapped: onTextTapped,
+                            onTopLoaderTapped: {
+                                onTopLoader1Tapped?()
+                            }
                         )
                         .onAppear {
                             print("[DEBUG] TopLoaderView 조건: isAttached=\(topLoader1.isAttached), showTopLoader=\(topLoader1.showTopLoader)")
@@ -154,7 +155,10 @@ struct PhotoBoxContainerView: View {
                             selectedMenu: $selectedMenu,
                             showTopLoaderContextMenu: $showTopLoader2ContextMenu,
                             onStickerTapped: onStickerTapped,
-                            onTextTapped: onTextTapped
+                            onTextTapped: onTextTapped,
+                            onTopLoaderTapped: {
+                                onTopLoader2Tapped?()
+                            }
                         )
                         .onAppear {
                             print("[DEBUG] TopLoaderView 조건: isAttached=\(topLoader2.isAttached), showTopLoader=\(topLoader2.showTopLoader)")
@@ -169,8 +173,8 @@ struct PhotoBoxContainerView: View {
                     // 모든 메뉴 닫기
                     selectedMenu = nil
                     showContextMenu = false
-                    showTopLoader1ContextMenu = false
-                    showTopLoader2ContextMenu = false
+                    showTopLoader1ContextMenu = nil
+                    showTopLoader2ContextMenu = nil
                 }
             )
 //            .overlay(

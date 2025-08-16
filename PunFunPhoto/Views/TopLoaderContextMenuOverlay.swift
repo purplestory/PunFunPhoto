@@ -21,7 +21,9 @@ struct TopLoaderContextMenuOverlay: View {
             ZStack {
                 // 배경: 메뉴 바깥을 탭하면 닫힘
                 Color.black.opacity(0.001)
+                    .contentShape(Rectangle())
                     .onTapGesture {
+                        print("[DEBUG] TopLoaderContextMenuOverlay - 배경 터치됨 - 메뉴 닫기")
                         onDismiss()
                     }
                     .zIndex(0)

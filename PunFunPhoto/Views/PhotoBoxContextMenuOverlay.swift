@@ -50,11 +50,12 @@ struct PhotoBoxContextMenuOverlay: View {
             ZStack {
                 // 배경: 메뉴 바깥을 탭하면 닫힘
                 Color.black.opacity(0.001)
+                    .contentShape(Rectangle())
                     .onTapGesture {
+                        print("[DEBUG] PhotoBoxContextMenuOverlay - 배경 터치됨 - 메뉴 닫기")
                         onDismiss()
                     }
                     .zIndex(0)
-                    // .allowsHitTesting(false)
 
                 // 메뉴 본체: 중앙 정렬
                 VStack(spacing: 0) {

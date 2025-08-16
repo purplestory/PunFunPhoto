@@ -43,7 +43,7 @@ struct TopLoaderView: View {
     @Binding var showToast: Bool
     @Binding var toastMessage: String
     @Binding var selectedMenu: MenuType?
-    @Binding var showTopLoaderContextMenu: Bool
+    @Binding var showTopLoaderContextMenu: Bool?
     @State private var showTopLoaderLibrary = false
     @State private var showContextMenu: Bool = false
     @State private var showSaveDialog = false
@@ -53,11 +53,13 @@ struct TopLoaderView: View {
     // 스티커 터치 콜백
     var onStickerTapped: ((UUID, CGPoint) -> Void)? = nil
     var onTextTapped: ((UUID, CGPoint) -> Void)? = nil
+    // 탑로더 터치 시 다른 메뉴들을 닫는 콜백
+    var onTopLoaderTapped: (() -> Void)? = nil
     
     // 원본 크기 기준 cornerRadius
     private let baseCornerRadius: CGFloat = 30
     
-    init(state: TopLoaderState, boxSize: CGSize, boxOrigin: CGPoint = .zero, scaleFactor: CGFloat = 1.0, showToast: Binding<Bool>, toastMessage: Binding<String>, selectedMenu: Binding<MenuType?>, showTopLoaderContextMenu: Binding<Bool>, onStickerTapped: ((UUID, CGPoint) -> Void)? = nil, onTextTapped: ((UUID, CGPoint) -> Void)? = nil) {
+    init(state: TopLoaderState, boxSize: CGSize, boxOrigin: CGPoint = .zero, scaleFactor: CGFloat = 1.0, showToast: Binding<Bool>, toastMessage: Binding<String>, selectedMenu: Binding<MenuType?>, showTopLoaderContextMenu: Binding<Bool?>, onStickerTapped: ((UUID, CGPoint) -> Void)? = nil, onTextTapped: ((UUID, CGPoint) -> Void)? = nil, onTopLoaderTapped: (() -> Void)? = nil) {
         self.state = state
         self.boxSize = boxSize
         self.boxOrigin = boxOrigin
@@ -68,6 +70,7 @@ struct TopLoaderView: View {
         self._showTopLoaderContextMenu = showTopLoaderContextMenu
         self.onStickerTapped = onStickerTapped
         self.onTextTapped = onTextTapped
+        self.onTopLoaderTapped = onTopLoaderTapped
         // 박스 중앙으로 초기화
         self._lastEmptyTapPosition = State(initialValue: CGPoint(x: boxSize.width/2, y: boxSize.height/2))
     }
@@ -90,16 +93,20 @@ struct TopLoaderView: View {
                                                     // 탑로더 터치 영역 (실제 컨텐츠가 있는 영역만)
                         if state.isAttached && state.showTopLoader {
                             // 실제 탑로더 컨텐츠가 있을 때만 터치 영역 활성화
-                            // 스티커와 텍스트가 없는 빈 공간만 터치 가능하도록 작게 설정
+                            // 스티커와 텍스트가 없는 빈 공간만 터치 가능하도록 설정
                             Color.clear
                                 .contentShape(Rectangle())
-                                .frame(width: min(boxSize.width, 100), height: min(boxSize.height, 80))
+                                .frame(width: boxSize.width, height: boxSize.height)
                                 .zIndex(50) // 스티커와 텍스트보다 낮게 설정
                                 .allowsHitTesting(true)
                                 .onTapGesture {
                                     print("[DEBUG] 탑로더 터치 영역 감지됨")
+                                    // 다른 메뉴들을 먼저 닫기
+                                    onTopLoaderTapped?()
+                                    selectedMenu = nil
+                                    
                                     // 탑로더 메뉴 토글
-                                    if showTopLoaderContextMenu {
+                                    if showTopLoaderContextMenu == true {
                                         showTopLoaderContextMenu = false
                                         print("[DEBUG] 탑로더 메뉴 닫힘")
                                     } else {

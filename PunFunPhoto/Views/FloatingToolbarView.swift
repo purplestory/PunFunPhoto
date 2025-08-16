@@ -45,6 +45,40 @@ struct FloatingToolbarView: View {
     @Binding var showTopLoader2ContextMenu: Bool?
     var onMenuChange: (() -> Void)? = nil
     var onClosePopupMenus: (() -> Void)? = nil
+
+    
+    init(
+        showSafeFrame: Binding<Bool>,
+        photo1: PhotoState,
+        photo2: PhotoState,
+        topLoader1: TopLoaderState,
+        topLoader2: TopLoaderState,
+        showPhotoPicker: Binding<Bool>,
+        photoPickerMode: Binding<PhotoPickerMode>,
+        showAlreadySelectedAlert: Binding<Bool>,
+        selectedMenu: Binding<MenuType?>,
+        showContextMenu: Binding<Bool>,
+        showTopLoader1ContextMenu: Binding<Bool?>,
+        showTopLoader2ContextMenu: Binding<Bool?>,
+        onMenuChange: (() -> Void)? = nil,
+        onClosePopupMenus: (() -> Void)? = nil
+
+    ) {
+        self._showSafeFrame = showSafeFrame
+        self.photo1 = photo1
+        self.photo2 = photo2
+        self.topLoader1 = topLoader1
+        self.topLoader2 = topLoader2
+        self._showPhotoPicker = showPhotoPicker
+        self._photoPickerMode = photoPickerMode
+        self._showAlreadySelectedAlert = showAlreadySelectedAlert
+        self._selectedMenu = selectedMenu
+        self._showContextMenu = showContextMenu
+        self._showTopLoader1ContextMenu = showTopLoader1ContextMenu
+        self._showTopLoader2ContextMenu = showTopLoader2ContextMenu
+        self.onMenuChange = onMenuChange
+        self.onClosePopupMenus = onClosePopupMenus
+    }
     
     private var isLandscape: Bool {
         horizontalSizeClass == .regular
@@ -74,83 +108,78 @@ struct FloatingToolbarView: View {
         44 + getSafeAreaInsets().top
     }
     
+    private var toolbarContent: some View {
+        VStack(spacing: 0) {
+            // 상단 툴바
+            HStack(spacing: 20) {
+                ForEach(MenuType.allCases, id: \.self) { menuType in
+                    toolbarButton(menuType: menuType)
+                }
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
+            .background(
+                GeometryReader { geo in
+                    Color.clear
+                        .preference(key: ViewPreferenceKeys.ToolbarFrameKey.self, value: geo.frame(in: .global))
+                }
+            )
+            .background(Color(.systemBackground).opacity(0.9))
+            .clipShape(RoundedRectangle(cornerRadius: 50, style: .continuous))
+            .shadow(color: Color.black.opacity(0.1), radius: 6, x: 0, y: 3)
+            .font(.system(size: 16, weight: .medium))
+            .frame(height: 44)
+            Spacer()
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        .padding(.top, getSafeAreaInsets().top)
+        .overlay(submenuOverlay)
+    }
+    
+    private var submenuOverlay: some View {
+        Group {
+            if let selected = selectedMenu {
+                GeometryReader { geo in
+                    ZStack(alignment: .topLeading) {
+                        // 서브메뉴: 상단 기준 offset 정렬
+                        menuOverlay(for: selected)
+                            .frame(width: 200)
+                            .background(
+                                GeometryReader { geo in
+                                    Color.clear
+                                        .onAppear {
+                                            submenuHeight = geo.size.height
+                                        }
+                                }
+                            )
+                            .offset(
+                                x: toolbarFrame.minX + calculateSubmenuOffset(for: selected) + 35,
+                                y: toolbarFrame.maxY - geo.frame(in: .global).minY + 70
+                            )
+                            .zIndex(100)
+                    }
+                }
+                .ignoresSafeArea()
+                .zIndex(99)
+            }
+        }
+    }
+    
     var body: some View {
         GeometryReader { geometry in
             ZStack(alignment: .top) {
                 Color.clear
                     .overlay {
-                        VStack(spacing: 0) {
-                            // 상단 툴바
-                            HStack(spacing: 20) {
-                                ForEach(MenuType.allCases, id: \ .self) { menuType in
-                                    toolbarButton(type: menuType)
-                                }
-                            }
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 8)
-                            .background(
-                                GeometryReader { geo in
-                                    Color.clear
-                                        .preference(key: ViewPreferenceKeys.ToolbarFrameKey.self, value: geo.frame(in: .global))
-                                }
-                            )
-                            .background(Color(.systemBackground).opacity(0.9))
-                            .clipShape(RoundedRectangle(cornerRadius: 50, style: .continuous))
-                            .shadow(color: Color.black.opacity(0.1), radius: 6, x: 0, y: 3)
-                            .font(.system(size: 16, weight: .medium))
-                            .frame(height: 44)
-                            Spacer()
-                        }
-                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-
-                        .padding(.top, getSafeAreaInsets().top)
-                        // 서브메뉴는 overlay로 분리
-                        .overlay(
-                            Group {
-                                if let selected = selectedMenu {
-                                    GeometryReader { geo in
-                                        let toolbarRect = toolbarFrame
-                                        ZStack(alignment: .topLeading) {
-                                            // 전체 화면 배경
-                                            Color.black.opacity(0.001)
-                                                .contentShape(Rectangle())
-                                                .onTapGesture { 
-                                                    withAnimation { 
-                                                        selectedMenu = nil 
-                                                    } 
-                                                }
-                                                .zIndex(99)
-                                            
-                                            // 서브메뉴: 상단 기준 offset 정렬
-                                            menuOverlay(for: selected)
-                                                .frame(width: 200)
-                                                .background(
-                                                    GeometryReader { geo in
-                                                        Color.clear
-                                                            .onAppear {
-                                                                submenuHeight = geo.size.height
-                                                            }
-                                                    }
-                                                )
-                                                .offset(
-                                                    x: toolbarFrame.minX + calculateSubmenuOffset(for: selected) + 35,
-                                                    y: toolbarFrame.maxY - geo.frame(in: .global).minY + 70
-                                                )
-                                                .zIndex(100)
-                                        }
-                                    }
-                                    .ignoresSafeArea()
-                                    .zIndex(99)
-                                }
-                            }
-                        )
+                        toolbarContent
                     }
                 CenterToastView(message: toastMessage, type: toastType.toCenterToastType, isVisible: $showToast)
-                    // .allowsHitTesting(false)
             }
         }
         .ignoresSafeArea()
         .coordinateSpace(name: "CanvasSpace")
+
+
+
         .onPreferenceChange(MenuPositionKey.self) { (positions: [MenuPosition]) in
             menuPositions = positions
         }
@@ -238,35 +267,31 @@ struct FloatingToolbarView: View {
     }
     
     // MARK: - Helper Views
-    private func toolbarButton(type: MenuType) -> some View {
+    private func toolbarButton(menuType: MenuType) -> some View {
         Button(action: {
-            print("[DEBUG] 상단 메뉴 '\(type.title)' 터치됨")
+            print("[DEBUG] 상단 메뉴 '\(menuType.title)' 터치됨")
             print("[DEBUG] 터치 전 상태 - selectedMenu: \(selectedMenu?.title ?? "nil")")
             
-            // 먼저 포토카드/탑로더 팝업 메뉴들을 닫기
-            print("[DEBUG] onClosePopupMenus 호출 시작")
+            // 포토카드나 탑로더 컨텍스트 메뉴가 열려있으면 먼저 닫기
             onClosePopupMenus?()
-            print("[DEBUG] onClosePopupMenus 호출 완료")
             
             // 메뉴 전환 로직: 같은 메뉴를 터치하면 닫고, 다른 메뉴를 터치하면 바로 열기
-            withAnimation {
-                if selectedMenu == type {
-                    // 같은 메뉴를 터치하면 닫기
-                    selectedMenu = nil
-                    print("[DEBUG] 메뉴 '\(type.title)' 닫힘")
-                } else {
-                    // 다른 메뉴를 터치하면 기존 메뉴를 닫고 새 메뉴 열기
-                    selectedMenu = type
-                    print("[DEBUG] 메뉴 '\(type.title)' 열림")
-                }
+            if selectedMenu == menuType {
+                // 같은 메뉴를 터치하면 닫기
+                selectedMenu = nil
+                print("[DEBUG] 메뉴 '\(menuType.title)' 닫힘")
+            } else {
+                // 다른 메뉴를 터치하면 기존 메뉴를 닫고 새 메뉴 열기
+                selectedMenu = menuType
+                print("[DEBUG] 메뉴 '\(menuType.title)' 열림")
             }
             
             onMenuChange?()
         }) {
             HStack(spacing: 6) {
-                Image(systemName: type.icon)
+                Image(systemName: menuType.icon)
                     .font(.system(size: 16))
-                Text(type.title)
+                Text(menuType.title)
                     .font(.system(size: 16, weight: .medium))
             }
             .foregroundColor(.primary)
@@ -275,12 +300,12 @@ struct FloatingToolbarView: View {
             .background(
                 GeometryReader { geo in
                     Color.clear
-                        .preference(key: MenuPositionKey.self, value: [MenuPosition(type: type, frame: geo.frame(in: .global), textFrame: geo.frame(in: .global))])
+                        .preference(key: MenuPositionKey.self, value: [MenuPosition(type: menuType, frame: geo.frame(in: .global), textFrame: geo.frame(in: .global))])
                 }
             )
         }
-        .accessibilityLabel(type.title)
-        .accessibilityHint(selectedMenu == type ? "선택된 메뉴입니다. 다시 탭하여 닫을 수 있습니다." : "선택하여 \(type.title) 메뉴를 열 수 있습니다.")
+        .accessibilityLabel(menuType.title)
+        .accessibilityHint(selectedMenu == menuType ? "선택된 메뉴입니다. 다시 탭하여 닫을 수 있습니다." : "선택하여 \(menuType.title) 메뉴를 열 수 있습니다.")
     }
     
     private func menuOverlay(for menuType: MenuType) -> some View {

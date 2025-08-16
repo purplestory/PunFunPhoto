@@ -68,6 +68,7 @@ struct EditablePhotoBox: View {
                             .size(width: boxSize.width, height: boxSize.height))
                         .onTapGesture {
                             print("[EditablePhotoBox] 이미지 탭: boxIndex=\(boxIndex)")
+                            onTap() // 먼저 onTap 호출
                             let globalFrame = geo.frame(in: .named("RootSpace"))
                             onContextMenuRequested(globalFrame)
                             selectedMenu = nil

@@ -55,6 +55,8 @@ struct CanvasGroupView: View {
             onContextMenuRequested: onContextMenuRequested,
             onStickerTapped: nil,
             onTextTapped: nil,
+            onTopLoader1Tapped: nil,
+            onTopLoader2Tapped: nil,
             showToast: $showToast,
             toastMessage: $toastMessage,
             selectedMenu: $selectedMenu,
