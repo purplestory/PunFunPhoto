@@ -43,6 +43,7 @@ struct TopLoaderView: View {
     @Binding var showToast: Bool
     @Binding var toastMessage: String
     @Binding var selectedMenu: MenuType?
+    @Binding var showTopLoaderContextMenu: Bool
     @State private var showTopLoaderLibrary = false
     @State private var showSaveDialog = false
     @State private var newTopLoaderName = ""
@@ -51,7 +52,7 @@ struct TopLoaderView: View {
     // 원본 크기 기준 cornerRadius
     private let baseCornerRadius: CGFloat = 30
     
-    init(state: TopLoaderState, boxSize: CGSize, boxOrigin: CGPoint = .zero, scaleFactor: CGFloat = 1.0, showToast: Binding<Bool>, toastMessage: Binding<String>, selectedMenu: Binding<MenuType?>, showContextMenu: Binding<Bool>) {
+    init(state: TopLoaderState, boxSize: CGSize, boxOrigin: CGPoint = .zero, scaleFactor: CGFloat = 1.0, showToast: Binding<Bool>, toastMessage: Binding<String>, selectedMenu: Binding<MenuType?>, showContextMenu: Binding<Bool>, showTopLoaderContextMenu: Binding<Bool>) {
         self.state = state
         self.boxSize = boxSize
         self.boxOrigin = boxOrigin
@@ -60,6 +61,7 @@ struct TopLoaderView: View {
         self._toastMessage = toastMessage
         self._selectedMenu = selectedMenu
         self._showContextMenu = showContextMenu
+        self._showTopLoaderContextMenu = showTopLoaderContextMenu
         // 박스 중앙으로 초기화
         self._lastEmptyTapPosition = State(initialValue: CGPoint(x: boxSize.width/2, y: boxSize.height/2))
     }
@@ -443,6 +445,47 @@ struct TopLoaderView: View {
                 print("[DEBUG] [onChange] 탑로더 메뉴 contextMenuPosition 강제 갱신: \(contextMenuPosition)")
             }
         }
+        // 탑로더 컨텍스트 메뉴 오버레이
+        .overlay(
+            Group {
+                if showTopLoaderContextMenu {
+                    VStack(alignment: .leading, spacing: 0) {
+                        ForEach(contextMenuItems()) { item in
+                            Button(action: {
+                                withAnimation {
+                                    item.action()
+                                    showTopLoaderContextMenu = false
+                                }
+                            }) {
+                                HStack(spacing: 8) {
+                                    Image(systemName: item.icon)
+                                        .imageScale(.medium)
+                                        .frame(width: 24)
+                                    Text(item.title)
+                                        .font(.system(size: 16, weight: .medium))
+                                        .lineLimit(1)
+                                }
+                                .frame(height: 36)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                            }
+                            .buttonStyle(PlainButtonStyle())
+                            .disabled(!item.isEnabled)
+                        }
+                    }
+                    .padding(.vertical, 8)
+                    .padding(.horizontal, 12)
+                    .background(Color(.systemBackground).opacity(0.9))
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                    .shadow(color: Color.black.opacity(0.1), radius: 6, x: 0, y: 3)
+                    .frame(width: 200)
+                    .position(
+                        x: contextMenuPosition.x,
+                        y: contextMenuPosition.y
+                    )
+                    .zIndex(9998)
+                }
+            }
+        )
     }
     
 @ViewBuilder
