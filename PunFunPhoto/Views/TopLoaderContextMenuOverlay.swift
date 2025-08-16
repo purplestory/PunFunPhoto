@@ -11,120 +11,92 @@ struct TopLoaderContextMenuOverlay: View {
     let onRemove: () -> Void
     let isVisible: Bool
     
+    // 포토카드 메뉴와 동일한 스타일 적용
+    private var menuWidth: CGFloat { 340 }
+    private var baseFontSize: CGFloat { 16 }
+    private var basePadding: CGFloat { 12 * (menuWidth / 200) }
+    
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            // 텍스트 추가
-            Button(action: {
-                onTextAdd()
-                onDismiss()
-            }) {
-                HStack(spacing: 8) {
-                    Image(systemName: "textformat")
-                        .imageScale(.medium)
-                        .frame(width: 24)
-                    Text("텍스트 추가")
-                        .font(.system(size: 16, weight: .medium))
-                        .lineLimit(1)
+        GeometryReader { geo in
+            ZStack {
+                // 배경: 메뉴 바깥을 탭하면 닫힘
+                Color.black.opacity(0.001)
+                    .onTapGesture {
+                        onDismiss()
+                    }
+                    .zIndex(0)
+
+                // 메뉴 본체: 중앙 정렬
+                VStack(spacing: 0) {
+                    menuItem(title: "텍스트 추가", systemImage: "textformat", action: {
+                        onTextAdd()
+                    })
+                    Divider().padding(.horizontal, 12)
+                    menuItem(title: "탑로더 관리", systemImage: "music.note", action: {
+                        onManage()
+                    })
+                    Divider().padding(.horizontal, 12)
+                    menuItem(title: "탑로더 저장", systemImage: "square.and.arrow.down", action: {
+                        onSave()
+                    })
+                    Divider().padding(.horizontal, 12)
+                    menuItem(
+                        title: isVisible ? "탑로더 가리기" : "탑로더 보기",
+                        systemImage: isVisible ? "eye.slash" : "eye",
+                        action: {
+                            onToggleVisibility()
+                        }
+                    )
+                    Divider().padding(.horizontal, 12)
+                    menuItem(
+                        title: "탑로더 제거",
+                        systemImage: "xmark.circle.fill",
+                        action: {
+                            onRemove()
+                        },
+                        textColor: .red
+                    )
                 }
-                .frame(height: 36)
-                .frame(maxWidth: .infinity, alignment: .leading)
+                .frame(alignment: .center)
+                .padding(.horizontal, 8)
+                .padding(.vertical, 8)
+                .background(
+                    Color(uiColor: .systemBackground)
+                )
+                .cornerRadius(8)
+                .shadow(radius: 10)
+                .fixedSize(horizontal: true, vertical: false)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+                .zIndex(1)
+                .allowsHitTesting(true)
             }
-            .buttonStyle(PlainButtonStyle())
-            
-            Divider().padding(.horizontal, 12)
-            
-            // 탑로더 관리
-            Button(action: {
-                onManage()
-                onDismiss()
-            }) {
-                HStack(spacing: 8) {
-                    Image(systemName: "music.note")
-                        .imageScale(.medium)
-                        .frame(width: 24)
-                    Text("탑로더 관리")
-                        .font(.system(size: 16, weight: .medium))
-                        .lineLimit(1)
-                }
-                .frame(height: 36)
-                .frame(maxWidth: .infinity, alignment: .leading)
+            .onAppear {
+                print("TopLoaderContextMenuOverlay 렌더링")
             }
-            .buttonStyle(PlainButtonStyle())
-            
-            Divider().padding(.horizontal, 12)
-            
-            // 탑로더 저장
-            Button(action: {
-                onSave()
-                onDismiss()
-            }) {
-                HStack(spacing: 8) {
-                    Image(systemName: "square.and.arrow.down")
-                        .imageScale(.medium)
-                        .frame(width: 24)
-                    Text("탑로더 저장")
-                        .font(.system(size: 16, weight: .medium))
-                        .lineLimit(1)
-                }
-                .frame(height: 36)
-                .frame(maxWidth: .infinity, alignment: .leading)
-            }
-            .buttonStyle(PlainButtonStyle())
-            
-            Divider().padding(.horizontal, 12)
-            
-            // 탑로더 보기/가리기
-            Button(action: {
-                onToggleVisibility()
-                onDismiss()
-            }) {
-                HStack(spacing: 8) {
-                    Image(systemName: isVisible ? "eye.slash" : "eye")
-                        .imageScale(.medium)
-                        .frame(width: 24)
-                    Text(isVisible ? "탑로더 가리기" : "탑로더 보기")
-                        .font(.system(size: 16, weight: .medium))
-                        .lineLimit(1)
-                }
-                .frame(height: 36)
-                .frame(maxWidth: .infinity, alignment: .leading)
-            }
-            .buttonStyle(PlainButtonStyle())
-            
-            Divider().padding(.horizontal, 12)
-            
-            // 탑로더 제거
-            Button(action: {
-                onRemove()
-                onDismiss()
-            }) {
-                HStack(spacing: 8) {
-                    Image(systemName: "xmark.circle.fill")
-                        .foregroundColor(.red)
-                        .imageScale(.medium)
-                        .frame(width: 24)
-                    Text("탑로더 제거")
-                        .font(.system(size: 16, weight: .medium))
-                        .foregroundColor(.red)
-                        .lineLimit(1)
-                }
-                .frame(height: 36)
-                .frame(maxWidth: .infinity, alignment: .leading)
-            }
-            .buttonStyle(PlainButtonStyle())
         }
-        .padding(.vertical, 8)
-        .padding(.horizontal, 12)
-        .background(Color(.systemBackground).opacity(0.9))
-        .clipShape(RoundedRectangle(cornerRadius: 12))
-        .shadow(color: Color.black.opacity(0.1), radius: 6, x: 0, y: 3)
-        .frame(width: 200)
-        .background(
-            Color.black.opacity(0.001)
-                .onTapGesture {
-                    onDismiss()
-                }
-        )
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+        .coordinateSpace(name: "CanvasSpace")
+        .zIndex(9999)
+    }
+
+    @ViewBuilder
+    private func menuItem(
+        title: String,
+        systemImage: String,
+        action: @escaping () -> Void,
+        textColor: Color = .primary
+    ) -> some View {
+        Button(action: {
+            action()
+            onDismiss()
+        }) {
+            Label(title, systemImage: systemImage)
+                .font(.system(size: 16, weight: .medium))
+                .foregroundColor(textColor)
+                .padding(.horizontal, 6)
+                .padding(.vertical, 8)
+                .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
+        }
     }
 }
 
