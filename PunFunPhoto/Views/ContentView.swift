@@ -93,6 +93,8 @@ struct ContentView: View {
                             .foregroundColor(.gray)
                             .padding(.top, 4)
                     }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .position(x: rootGeo.size.width / 2, y: rootGeo.size.height / 2)
                 } else {
                     ZStack {
                         PhotoEditorView(

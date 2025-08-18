@@ -361,12 +361,15 @@ struct PhotoEditorView: View {
                 Color.clear // 모든 디바이스에서 배경색을 상위 뷰에서 처리
                 VStack {
                     Spacer()
+                        .frame(height: UIDevice.current.userInterfaceIdiom == .phone ? 10 : 0) // 아이폰에서 위쪽 여백 추가
                     mainCanvas(scaleFactor: scaleFactor)
                         .padding(.horizontal, 20) // 좌우 여백 추가
                         .padding(.vertical, 20)   // 상하 여백 추가
                     Spacer()
+                        .frame(height: UIDevice.current.userInterfaceIdiom == .phone ? 60 : 20) // 아이폰에서 아래쪽 여백 증가
                 }
                 .frame(maxWidth: .infinity)
+                .offset(x: selectedMenu != nil ? 50 : 0) // 메뉴가 열릴 때 오른쪽으로 이동
                 .zIndex(0)
                 
 

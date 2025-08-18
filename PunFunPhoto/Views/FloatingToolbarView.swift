@@ -209,9 +209,9 @@ struct FloatingToolbarView: View {
                     }
                 } else {
                     // 아이패드: 상단 드롭다운 툴바 구조 (최종 버전)
-                    ZStack(alignment: .top) {
-                        Color.clear
-                            .overlay {
+            ZStack(alignment: .top) {
+                Color.clear
+                    .overlay {
                                 ipadTopToolbarContent
                             }
                     }
@@ -345,11 +345,11 @@ struct FloatingToolbarView: View {
     private func mainMenuButton(for menuType: MenuType) -> some View {
         Button(action: {
             withAnimation(.easeInOut(duration: 0.2)) {
-                if selectedMenu == menuType {
-                    selectedMenu = nil
-                } else {
-                    selectedMenu = menuType
-                }
+            if selectedMenu == menuType {
+                selectedMenu = nil
+            } else {
+                selectedMenu = menuType
+            }
             }
         }) {
             HStack {
@@ -603,7 +603,7 @@ struct FloatingToolbarView: View {
                         toastMessage = "탑로더가 복제되었습니다."
                     }
                 }),
-                MenuItem(title: "탑로더 모두 제거", icon: "xmark.circle", action: { 
+                MenuItem(title: "탑로더 모두 제거", icon: "xmark.circle", action: {
                     // 탑로더 모두 제거
                     topLoader1.detach()
                     topLoader2.detach()
@@ -712,7 +712,7 @@ struct FloatingToolbarView: View {
                 // 같은 메뉴를 터치하면 닫기
                 selectedMenu = nil
                 print("[DEBUG] ✅ 메뉴 '\(menuType.title)' 닫힘")
-            } else {
+        } else {
                 // 다른 메뉴를 터치하면 기존 메뉴를 닫고 새 메뉴 열기
                 selectedMenu = menuType
                 print("[DEBUG] ✅ 메뉴 '\(menuType.title)' 열림")
