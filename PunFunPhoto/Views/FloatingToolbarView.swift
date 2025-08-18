@@ -159,40 +159,110 @@ struct FloatingToolbarView: View {
     }
     
     /// 가이드에 따른 완벽한 툴바 컨텐츠 구현
-    /// 완벽한 반응형 디자인과 접근성을 제공
+    /// 아이폰과 아이패드 각각 최적화된 UI 제공
     private var toolbarContent: some View {
-        VStack(spacing: 0) {
-            // 가이드에 따른 완벽한 상단 툴바
-            HStack(spacing: dynamicSpacing) {
-                ForEach(MenuType.allCases, id: \.self) { menuType in
-                    toolbarButton(menuType: menuType)
+        Group {
+            if UIDevice.current.userInterfaceIdiom == .phone {
+                // 아이폰: 세로 확장 가능한 툴바 (아이폰용 분기에서 가져온 최적화)
+                VStack(spacing: 0) {
+                    // 메인 툴바
+                    HStack(spacing: 12) {
+                        ForEach(MenuType.allCases, id: \.self) { menuType in
+                            toolbarButton(menuType: menuType)
+                        }
+                        Spacer()
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 12)
+                    .background(Color(.systemBackground))
+                    .overlay(
+                        Rectangle()
+                            .frame(height: 0.5)
+                            .foregroundColor(Color(.separator))
+                            .offset(y: 0.25),
+                        alignment: .bottom
+                    )
+                    
+                    // 확장된 메뉴 영역
+                    if let selected = selectedMenu {
+                        VStack(spacing: 0) {
+                            ForEach(menuItems(for: selected)) { item in
+                                Button(action: {
+                                    withAnimation(.easeInOut(duration: 0.15)) {
+                                        item.action()
+                                        selectedMenu = nil
+                                        onMenuChange?()
+                                    }
+                                }) {
+                                    HStack(spacing: 12) {
+                                        Image(systemName: item.icon)
+                                            .font(.system(size: 18))
+                                            .foregroundColor(item.isEnabled ? .primary : .secondary)
+                                            .frame(width: 24)
+                                        Text(item.title)
+                                            .font(.system(size: 16, weight: .medium))
+                                            .foregroundColor(item.isEnabled ? .primary : .secondary)
+                                        Spacer()
+                                    }
+                                    .padding(.horizontal, 20)
+                                    .padding(.vertical, 16)
+                                    .background(Color(.systemBackground))
+                                }
+                                .buttonStyle(PlainButtonStyle())
+                                .disabled(!item.isEnabled)
+                                
+                                Divider()
+                                    .padding(.leading, 56)
+                            }
+                        }
+                        .background(Color(.systemBackground))
+                        .transition(.asymmetric(
+                            insertion: .move(edge: .top).combined(with: .opacity),
+                            removal: .move(edge: .top).combined(with: .opacity)
+                        ))
+                    }
                 }
+                .background(
+                    GeometryReader { geo in
+                        Color.clear
+                            .preference(key: ViewPreferenceKeys.ToolbarFrameKey.self, value: geo.frame(in: .global))
+                    }
+                )
+            } else {
+                // 아이패드: 기존 최적화된 툴바 (아이패드용 분기에서 가져온 최적화)
+                VStack(spacing: 0) {
+                    HStack(spacing: dynamicSpacing) {
+                        ForEach(MenuType.allCases, id: \.self) { menuType in
+                            toolbarButton(menuType: menuType)
+                        }
+                    }
+                    .padding(.horizontal, dynamicPadding)
+                    .padding(.vertical, 8)
+                    .background(
+                        GeometryReader { geo in
+                            Color.clear
+                                .preference(key: ViewPreferenceKeys.ToolbarFrameKey.self, value: geo.frame(in: .global))
+                        }
+                    )
+                    .background(
+                        Color(.systemBackground)
+                            .opacity(0.95)
+                            .shadow(color: Color.black.opacity(0.15), radius: 10, x: 0, y: 5)
+                    )
+                    .clipShape(RoundedRectangle(cornerRadius: 50, style: .continuous))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 50, style: .continuous)
+                            .stroke(Color(.separator).opacity(0.2), lineWidth: 0.5)
+                    )
+                    .font(.system(size: dynamicFontSize, weight: .medium))
+                    .frame(height: 44)
+                    Spacer()
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+                .padding(.top, getSafeAreaInsets().top)
+                .overlay(submenuOverlay)
             }
-            .padding(.horizontal, dynamicPadding)
-            .padding(.vertical, 8)
-            .background(
-                GeometryReader { geo in
-                    Color.clear
-                        .preference(key: ViewPreferenceKeys.ToolbarFrameKey.self, value: geo.frame(in: .global))
-                }
-            )
-            .background(
-                Color(.systemBackground)
-                    .opacity(0.95)
-                    .shadow(color: Color.black.opacity(0.15), radius: 10, x: 0, y: 5)
-            )
-            .clipShape(RoundedRectangle(cornerRadius: 50, style: .continuous))
-            .overlay(
-                RoundedRectangle(cornerRadius: 50, style: .continuous)
-                    .stroke(Color(.separator).opacity(0.2), lineWidth: 0.5)
-            )
-            .font(.system(size: dynamicFontSize, weight: .medium))
-            .frame(height: 44)
-            Spacer()
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-        .padding(.top, getSafeAreaInsets().top)
-        .overlay(submenuOverlay)
     }
     
     /// 가이드에 따른 완벽한 드롭다운 메뉴 오버레이
@@ -330,54 +400,98 @@ struct FloatingToolbarView: View {
     
     // MARK: - Helper Views
     /// 가이드에 따른 완벽한 툴바 버튼 구현
+    /// 아이폰과 아이패드 각각 최적화된 버튼 제공
     /// - Parameter menuType: 메뉴 타입
     /// - Returns: 완벽한 정렬과 토글 기능을 가진 버튼
     private func toolbarButton(menuType: MenuType) -> some View {
-        Button(action: {
-            print("[DEBUG] 🎯 가이드 기반 메뉴 토글 - '\(menuType.title)' 터치됨")
-            print("[DEBUG] 📊 터치 전 상태 - selectedMenu: \(selectedMenu?.title ?? "nil")")
-            
-            // 가이드에 따른 완벽한 메뉴 토글 시스템
-            if selectedMenu == menuType {
-                // 같은 메뉴를 터치하면 닫기
-                selectedMenu = nil
-                print("[DEBUG] ✅ 메뉴 '\(menuType.title)' 닫힘")
-            } else {
-                // 다른 메뉴를 터치하면 기존 메뉴를 닫고 새 메뉴 열기
-                selectedMenu = menuType
-                print("[DEBUG] ✅ 메뉴 '\(menuType.title)' 열림")
-            }
-            
-            // 가이드에 따른 메뉴 변경 콜백
-            onMenuChange?()
-        }) {
-            HStack(spacing: 6) {
-                Image(systemName: menuType.icon)
-                    .font(.system(size: 16))
-                Text(menuType.title)
-                    .font(.system(size: 16, weight: .medium))
-            }
-            .foregroundColor(.primary)
-            .padding(.horizontal, 10)
-            .contentShape(Rectangle())
-            .background(
-                GeometryReader { geo in
-                    Color.clear
-                        .preference(key: MenuPositionKey.self, value: [MenuPosition(type: menuType, frame: geo.frame(in: .global), textFrame: geo.frame(in: .global))])
-                        .onAppear {
-                            print("[DEBUG] 📍 메뉴 위치 정보 수집 - \(menuType): \(geo.frame(in: .global))")
-                        }
-                        .onChange(of: geo.frame(in: .global)) { newFrame in
-                            print("[DEBUG] 📍 메뉴 위치 변경 - \(menuType): \(newFrame)")
-                        }
-                        .id("menu-\(menuType.rawValue)") // 고유 ID로 정확한 위치 추적
+        let isSelected = selectedMenu == menuType
+        let hasSubmenu = !menuItems(for: menuType).isEmpty
+        
+        Group {
+            if UIDevice.current.userInterfaceIdiom == .phone {
+                // 아이폰: 세로 배치 (아이폰용 분기에서 가져온 최적화)
+                VStack(spacing: 4) {
+                    Image(systemName: menuType.icon)
+                        .font(.system(size: 16, weight: .medium))
+                        .foregroundColor(isSelected ? .white : .primary)
+                        .frame(width: 24, height: 24)
+                    
+                    Text(menuType.title)
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundColor(isSelected ? .white : .primary)
+                        .lineLimit(1)
                 }
-            )
+                .frame(width: 60, height: 50)
+                .background(
+                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                        .fill(isSelected ? Color.blue : Color(.systemGray6))
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                        .stroke(isSelected ? Color.blue : Color(.separator).opacity(0.3), lineWidth: 1)
+                )
+                .onTapGesture {
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                        if isSelected {
+                            selectedMenu = nil
+                        } else {
+                            selectedMenu = menuType
+                        }
+                        onMenuChange?()
+                    }
+                }
+                .accessibilityLabel(menuType.title)
+                .accessibilityHint(hasSubmenu ? "하위 메뉴를 보려면 탭하세요" : "기능을 실행하려면 탭하세요")
+                .accessibilityValue(isSelected ? "선택됨" : "선택되지 않음")
+            } else {
+                // 아이패드: 가로 배치 (기존 최적화 유지)
+                Button(action: {
+                    print("[DEBUG] 🎯 가이드 기반 메뉴 토글 - '\(menuType.title)' 터치됨")
+                    print("[DEBUG] 📊 터치 전 상태 - selectedMenu: \(selectedMenu?.title ?? "nil")")
+                    
+                    // 가이드에 따른 완벽한 메뉴 토글 시스템
+                    if selectedMenu == menuType {
+                        // 같은 메뉴를 터치하면 닫기
+                        selectedMenu = nil
+                        print("[DEBUG] ✅ 메뉴 '\(menuType.title)' 닫힘")
+                    } else {
+                        // 다른 메뉴를 터치하면 기존 메뉴를 닫고 새 메뉴 열기
+                        selectedMenu = menuType
+                        print("[DEBUG] ✅ 메뉴 '\(menuType.title)' 열림")
+                    }
+                    
+                    // 가이드에 따른 메뉴 변경 콜백
+                    onMenuChange?()
+                }) {
+                    HStack(spacing: 6) {
+                        Image(systemName: menuType.icon)
+                            .font(.system(size: 16))
+                        Text(menuType.title)
+                            .font(.system(size: 16, weight: .medium))
+                    }
+                    .foregroundColor(.primary)
+                    .padding(.horizontal, 20)
+                    .contentShape(Rectangle())
+                    .background(
+                        GeometryReader { geo in
+                            Color.clear
+                                .preference(key: MenuPositionKey.self, value: [MenuPosition(type: menuType, frame: geo.frame(in: .global), textFrame: geo.frame(in: .global))])
+                                .onAppear {
+                                    print("[DEBUG] 📍 메뉴 위치 정보 수집 - \(menuType): \(geo.frame(in: .global))")
+                                }
+                                .onChange(of: geo.frame(in: .global)) { newFrame in
+                                    print("[DEBUG] 📍 메뉴 위치 변경 - \(menuType): \(newFrame)")
+                                }
+                                .id("menu-\(menuType.rawValue)") // 고유 ID로 정확한 위치 추적
+                        }
+                    )
+                }
+                // 가이드에 따른 완벽한 접근성 지원
+                .accessibilityLabel(menuType.title)
+                .accessibilityHint(selectedMenu == menuType ? "선택된 메뉴입니다. 다시 탭하여 닫을 수 있습니다." : "선택하여 \(menuType.title) 메뉴를 열 수 있습니다.")
+                .accessibilityValue(selectedMenu == menuType ? "열림" : "닫힘")
+            }
         }
-        // 가이드에 따른 완벽한 접근성 지원
-        .accessibilityLabel(menuType.title)
-        .accessibilityHint(selectedMenu == menuType ? "선택된 메뉴입니다. 다시 탭하여 닫을 수 있습니다." : "선택하여 \(menuType.title) 메뉴를 열 수 있습니다.")
-        .accessibilityValue(selectedMenu == menuType ? "열림" : "닫힘")
     }
     
     /// 가이드에 따른 완벽한 메뉴 오버레이 구현
