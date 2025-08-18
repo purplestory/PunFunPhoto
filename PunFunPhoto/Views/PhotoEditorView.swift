@@ -358,7 +358,11 @@ struct PhotoEditorView: View {
             }
 
             ZStack {
-                Color.white
+                if UIDevice.current.userInterfaceIdiom == .pad {
+                    Color.white
+                } else {
+                    Color.clear
+                }
                 VStack {
                     Spacer()
                     mainCanvas(scaleFactor: scaleFactor)
@@ -624,7 +628,7 @@ struct PhotoEditorView: View {
                     activeContextMenu = nil
                 }
             }
-            .background(Color.white)
+            .background(UIDevice.current.userInterfaceIdiom == .pad ? Color.white : Color.clear)
             .shadow(color: Color.black.opacity(0.1), radius: 6, x: 0, y: 3)
             .coordinateSpace(name: "CanvasSpace")
             .frame(width: geo.size.width, height: geo.size.height)
