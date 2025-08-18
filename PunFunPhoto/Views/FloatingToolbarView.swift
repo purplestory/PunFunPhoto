@@ -98,15 +98,15 @@ struct FloatingToolbarView: View {
     
     /// 가이드에 따른 동적 레이아웃 계산
     private var dynamicSpacing: CGFloat {
-        isMobile ? 16 : 20
+        isMobile ? 24 : 20 // 아이폰만 24pt로 조정, 아이패드는 기존 20pt 유지
     }
     
     private var dynamicPadding: CGFloat {
-        isMobile ? 10 : 12
+        isMobile ? 10 : 12 // 아이패드는 기존 12pt 유지
     }
     
     private var dynamicFontSize: CGFloat {
-        isMobile ? 15 : 16
+        isMobile ? 15 : 16 // 아이패드는 기존 16pt 유지
     }
     
     // MARK: - View States
