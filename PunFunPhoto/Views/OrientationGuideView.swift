@@ -6,16 +6,16 @@ struct OrientationGuideView: View {
 
     var body: some View {
         ZStack {
-            // 유니버셜 배경색 (50% 투명도)
+            // 유니버셜 배경색 (20% 투명도)
             Color(red: 126/255, green: 98/255, blue: 214/255) // R126 G98 B214
-                .opacity(0.5) // 50% 투명도
+                .opacity(0.2) // 20% 투명도
                 .ignoresSafeArea()
             
             ContentView()
                 .environmentObject(appState)
         }
         .background(
-            Color(red: 126/255, green: 98/255, blue: 214/255).opacity(0.5)
+            Color(red: 126/255, green: 98/255, blue: 214/255).opacity(0.2)
         )
         .ignoresSafeArea()
         .onChange(of: appState.currentProjectURL) { _, newURL in
