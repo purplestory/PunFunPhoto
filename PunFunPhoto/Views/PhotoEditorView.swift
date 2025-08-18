@@ -314,7 +314,10 @@ struct PhotoEditorView: View {
             let availableHeight = max(1, screenHeight - toolbarHeight - toolbarMargin - 60 )
             let scaleW = screenWidth / baseCanvasSize.width
             let scaleH = availableHeight / baseCanvasSize.height
-            let scaleFactor = max(0.1, min(scaleW, scaleH))
+            let baseScaleFactor = max(0.1, min(scaleW, scaleH))
+            
+            // 아이폰에서는 캔버스를 더 크게 표시
+            let scaleFactor = UIDevice.current.userInterfaceIdiom == .pad ? baseScaleFactor : baseScaleFactor * 1.1
 
             // context menu 관련 클로저를 computed property에서 boxIndex를 사용하도록 변경
             let onPick: () -> Void = {
@@ -359,9 +362,9 @@ struct PhotoEditorView: View {
                 VStack {
                     Spacer()
                     mainCanvas(scaleFactor: scaleFactor)
-                        .padding(.horizontal, 20) // 좌우 여백 추가
-                        .padding(.top, 30)        // 상단 여백 30픽셀 (기존 20 + 10)
-                        .padding(.bottom, 20)     // 하단 여백 20픽셀
+                        .padding(.horizontal, UIDevice.current.userInterfaceIdiom == .pad ? 20 : 10) // 아이폰에서는 여백 줄임
+                        .padding(.top, UIDevice.current.userInterfaceIdiom == .pad ? 30 : 20)        // 아이폰에서는 상단 여백 줄임
+                        .padding(.bottom, UIDevice.current.userInterfaceIdiom == .pad ? 20 : 10)     // 아이폰에서는 하단 여백 줄임
                     Spacer()
                 }
                 .frame(maxWidth: .infinity)
