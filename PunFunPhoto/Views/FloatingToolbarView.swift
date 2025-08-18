@@ -122,16 +122,10 @@ struct FloatingToolbarView: View {
         }
     }
     
-    /// 툴바 높이 계산 (접기/펼치기 상태에 따라)
+    /// 툴바 높이 계산 (아이폰에서만 확장/축소)
     private var toolbarHeight: CGFloat {
         if UIDevice.current.userInterfaceIdiom == .phone {
-            if isToolbarExpanded {
-                return 200 // 확장된 상태에서는 더 큰 높이
-            } else if isToolbarCollapsed {
-                return 30 // 접힌 상태
-            } else {
-                return 44 // 기본 상태
-            }
+            return isToolbarExpanded ? 200 : 44 // 확장된 상태 또는 기본 상태
         } else {
             return 44 // 아이패드는 항상 고정 높이
         }
@@ -142,8 +136,7 @@ struct FloatingToolbarView: View {
     @State private var showSavePrompt = false
     @State private var alertMessage: AlertMessage? = nil
     @State private var exportURL: URL? = nil
-    @State private var isToolbarCollapsed = false // 툴바 접기/펼치기 상태
-    @State private var isToolbarExpanded = false // 툴바 확장 상태 (왼쪽에서 위아래로)
+    @State private var isToolbarExpanded = false // 툴바 확장 상태 (아이폰에서만 사용)
     @State private var showExportSheet = false
     @State private var exportData: Data? = nil
     @State private var showFileImporter = false
@@ -180,9 +173,9 @@ struct FloatingToolbarView: View {
         .overlay(submenuOverlay)
     }
     
-    /// 아이폰 전용 툴바
+    /// 아이폰 전용 툴바 (기본적으로 닫혀있고, 펼치면 위아래로 열림)
     private var phoneToolbar: some View {
-        HStack(spacing: 0) {
+        VStack(spacing: 0) {
             if isToolbarExpanded {
                 // 확장된 상태: 세로로 메뉴 배치
                 VStack(spacing: 8) {
@@ -194,10 +187,9 @@ struct FloatingToolbarView: View {
                     Button(action: {
                         withAnimation(.easeInOut(duration: 0.3)) {
                             isToolbarExpanded = false
-                            isToolbarCollapsed = true
                         }
                     }) {
-                        Image(systemName: "chevron.left")
+                        Image(systemName: "chevron.up")
                             .font(.system(size: 14, weight: .medium))
                             .foregroundColor(.primary)
                             .frame(width: 24, height: 24)
@@ -210,31 +202,28 @@ struct FloatingToolbarView: View {
                 .padding(.vertical, 12)
                 .padding(.horizontal, 8)
             } else {
-                // 기본 상태 또는 접힌 상태
-                HStack(spacing: dynamicSpacing) {
-                    ForEach(MenuType.allCases, id: \.self) { menuType in
-                        toolbarButton(menuType: menuType)
-                    }
-                    
-                    // 확장 버튼
+                // 기본 상태: 작은 펼치기 버튼만 표시
+                HStack {
+                    // 펼치기 버튼
                     Button(action: {
                         withAnimation(.easeInOut(duration: 0.3)) {
                             isToolbarExpanded = true
-                            isToolbarCollapsed = false
                         }
                     }) {
-                        Image(systemName: "chevron.right")
+                        Image(systemName: "chevron.down")
                             .font(.system(size: 14, weight: .medium))
                             .foregroundColor(.primary)
-                            .frame(width: 24, height: 24)
-                            .background(Color(.systemGray5))
+                            .frame(width: 32, height: 32)
+                            .background(Color(.systemGray6))
                             .clipShape(Circle())
                     }
-                    .accessibilityLabel("툴바 확장")
-                    .accessibilityHint("툴바를 확장하여 메뉴를 세로로 배치합니다")
+                    .accessibilityLabel("툴바 펼치기")
+                    .accessibilityHint("툴바를 펼쳐서 메뉴를 사용합니다")
+                    
+                    Spacer()
                 }
-                .padding(.horizontal, dynamicPadding)
-                .padding(.vertical, isToolbarCollapsed ? 4 : 8)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 6)
             }
         }
         .background(
@@ -466,19 +455,15 @@ struct FloatingToolbarView: View {
                     .padding(.horizontal, 6)
                     .contentShape(Rectangle())
                 } else {
-                    // 기본 상태 또는 접힌 상태: 가로 배치
+                    // 기본 상태: 가로 배치 (아이폰에서는 기본적으로 닫혀있음)
                     HStack(spacing: 6) {
                         Image(systemName: menuType.icon)
                             .font(.system(size: 16))
-                        
-                        // 아이폰에서 접힌 상태일 때만 텍스트 숨김
-                        if !(UIDevice.current.userInterfaceIdiom == .phone && isToolbarCollapsed) {
-                            Text(menuType.title)
-                                .font(.system(size: 16, weight: .medium))
-                        }
+                        Text(menuType.title)
+                            .font(.system(size: 16, weight: .medium))
                     }
                     .foregroundColor(.primary)
-                    .padding(.horizontal, UIDevice.current.userInterfaceIdiom == .phone && isToolbarCollapsed ? 6 : 10)
+                    .padding(.horizontal, 10)
                     .contentShape(Rectangle())
                 }
             }
