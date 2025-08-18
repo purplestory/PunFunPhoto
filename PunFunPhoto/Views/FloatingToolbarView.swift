@@ -229,6 +229,10 @@ struct FloatingToolbarView: View {
         .onAppear {
             print("[DEBUG] FloatingToolbarView init - onClosePopupMenus 콜백 저장됨: \(onClosePopupMenus != nil)")
         }
+        .onPreferenceChange(MenuPositionKey.self) { positions in
+            print("[DEBUG] 📍 메뉴 위치 정보 업데이트: \(positions.count)개")
+            menuPositions = positions
+        }
         .onChange(of: selectedMenu) { _, newValue in
             print("[DEBUG] 🔥 selectedMenu 변경됨: \(newValue?.title ?? "nil")")
             if newValue != nil {
@@ -876,6 +880,7 @@ struct FloatingToolbarView: View {
     /// 정확한 메뉴 오프셋 계산
     private func getExactMenuOffset(for menuType: MenuType) -> CGFloat {
         let menuPosition = menuPositions.first { $0.type == menuType }
+        print("[DEBUG] 📍 메뉴 오프셋 계산 - \(menuType.title): \(menuPosition?.frame.minX ?? 0)")
         return menuPosition?.frame.minX ?? 0
     }
     
