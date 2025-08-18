@@ -98,7 +98,7 @@ struct FloatingToolbarView: View {
     
     /// 가이드에 따른 동적 레이아웃 계산
     private var dynamicSpacing: CGFloat {
-        isMobile ? 16 : 20
+        isMobile ? 24 : 32
     }
     
     private var dynamicPadding: CGFloat {
@@ -333,7 +333,7 @@ struct FloatingToolbarView: View {
                     .font(.system(size: 16, weight: .medium))
             }
             .foregroundColor(.primary)
-            .padding(.horizontal, 10)
+            .padding(.horizontal, 14)
             .contentShape(Rectangle())
             .background(
                 GeometryReader { geo in
