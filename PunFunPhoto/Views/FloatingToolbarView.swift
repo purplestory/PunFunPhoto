@@ -160,15 +160,6 @@ struct FloatingToolbarView: View {
     // 아이패드용 상태 변수들
     @State private var menuPositions: [MenuPosition] = []
     
-    /// 가이드에 따른 동적 레이아웃 계산
-    private var dynamicSpacing: CGFloat {
-        isMobile ? 16 : (isTablet ? 30 : 20) // 아이패드에서 간격 확대
-    }
-    
-    private var dynamicPadding: CGFloat {
-        isMobile ? 10 : (isTablet ? 16 : 12) // 아이패드에서 패딩 확대
-    }
-    
     // MARK: - Main View
     var body: some View {
         GeometryReader { geometry in
