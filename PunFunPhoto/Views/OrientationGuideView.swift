@@ -17,9 +17,10 @@ struct OrientationGuideView: View {
         }
         .background(
             UIDevice.current.userInterfaceIdiom == .phone ? 
-                Color.clear : 
+                Color(red: 126/255, green: 98/255, blue: 214/255) : 
                 Color.white
         )
+        .ignoresSafeArea()
         .onChange(of: appState.currentProjectURL) { _, newURL in
             if let url = newURL {
                 Task {
