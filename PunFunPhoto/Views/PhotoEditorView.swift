@@ -359,13 +359,17 @@ struct PhotoEditorView: View {
 
             ZStack {
                 Color.white
-                VStack {
-                    Spacer()
+                VStack(spacing: 0) {
+                    if UIDevice.current.userInterfaceIdiom == .pad {
+                        Spacer()
+                    }
                     mainCanvas(scaleFactor: scaleFactor)
-                        .padding(.horizontal, UIDevice.current.userInterfaceIdiom == .pad ? 20 : 10) // 아이폰에서는 여백 줄임
-                        .padding(.top, UIDevice.current.userInterfaceIdiom == .pad ? 30 : 20)        // 아이폰에서는 상단 여백 줄임
-                        .padding(.bottom, UIDevice.current.userInterfaceIdiom == .pad ? 20 : 10)     // 아이폰에서는 하단 여백 줄임
-                    Spacer()
+                        .padding(.horizontal, UIDevice.current.userInterfaceIdiom == .pad ? 20 : 5) // 아이폰에서는 여백 최소화
+                        .padding(.top, UIDevice.current.userInterfaceIdiom == .pad ? 30 : 10)        // 아이폰에서는 상단 여백 최소화
+                        .padding(.bottom, UIDevice.current.userInterfaceIdiom == .pad ? 20 : 5)     // 아이폰에서는 하단 여백 최소화
+                    if UIDevice.current.userInterfaceIdiom == .pad {
+                        Spacer()
+                    }
                 }
                 .frame(maxWidth: .infinity)
                 .zIndex(0)

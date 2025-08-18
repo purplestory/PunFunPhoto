@@ -122,11 +122,21 @@ struct FloatingToolbarView: View {
         }
     }
     
+    /// 툴바 높이 계산 (접기/펼치기 상태에 따라)
+    private var toolbarHeight: CGFloat {
+        if UIDevice.current.userInterfaceIdiom == .phone {
+            return isToolbarCollapsed ? 30 : 44 // 아이폰에서만 접기 기능
+        } else {
+            return 44 // 아이패드는 항상 고정 높이
+        }
+    }
+    
     // MARK: - View States
     @State private var showProjectList = false
     @State private var showSavePrompt = false
     @State private var alertMessage: AlertMessage? = nil
     @State private var exportURL: URL? = nil
+    @State private var isToolbarCollapsed = false // 툴바 접기/펼치기 상태
     @State private var showExportSheet = false
     @State private var exportData: Data? = nil
     @State private var showFileImporter = false
@@ -155,9 +165,27 @@ struct FloatingToolbarView: View {
                 ForEach(MenuType.allCases, id: \.self) { menuType in
                     toolbarButton(menuType: menuType)
                 }
+                
+                // 아이폰에서만 접기/펼치기 버튼 표시
+                if UIDevice.current.userInterfaceIdiom == .phone {
+                    Button(action: {
+                        withAnimation(.easeInOut(duration: 0.3)) {
+                            isToolbarCollapsed.toggle()
+                        }
+                    }) {
+                        Image(systemName: isToolbarCollapsed ? "chevron.down" : "chevron.up")
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundColor(.primary)
+                            .frame(width: 24, height: 24)
+                            .background(Color(.systemGray5))
+                            .clipShape(Circle())
+                    }
+                    .accessibilityLabel(isToolbarCollapsed ? "툴바 펼치기" : "툴바 접기")
+                    .accessibilityHint("툴바를 접거나 펼쳐서 화면 공간을 조절합니다")
+                }
             }
             .padding(.horizontal, dynamicPadding)
-            .padding(.vertical, 8)
+            .padding(.vertical, isToolbarCollapsed ? 4 : 8) // 접힌 상태에서는 패딩 줄임
             .background(
                 GeometryReader { geo in
                     Color.clear
@@ -175,7 +203,7 @@ struct FloatingToolbarView: View {
                     .stroke(Color(.separator).opacity(0.2), lineWidth: 0.5)
             )
             .font(.system(size: dynamicFontSize, weight: .medium))
-            .frame(height: 44)
+            .frame(height: toolbarHeight) // 동적 높이 적용
             Spacer()
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
@@ -351,11 +379,15 @@ struct FloatingToolbarView: View {
             HStack(spacing: 6) {
                 Image(systemName: menuType.icon)
                     .font(.system(size: 16))
-                Text(menuType.title)
-                    .font(.system(size: 16, weight: .medium))
+                
+                // 아이폰에서 접힌 상태일 때만 텍스트 숨김
+                if !(UIDevice.current.userInterfaceIdiom == .phone && isToolbarCollapsed) {
+                    Text(menuType.title)
+                        .font(.system(size: 16, weight: .medium))
+                }
             }
             .foregroundColor(.primary)
-            .padding(.horizontal, 10)
+            .padding(.horizontal, UIDevice.current.userInterfaceIdiom == .phone && isToolbarCollapsed ? 6 : 10)
             .contentShape(Rectangle())
             .background(
                 GeometryReader { geo in
