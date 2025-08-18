@@ -177,7 +177,7 @@ struct FloatingToolbarView: View {
             if let selected = selectedMenu {
                 VStack(spacing: 0) {
                     Spacer()
-                        .frame(height: isMobile ? 36 : 44) // 툴바 높이만큼 여백
+                        .frame(height: isMobile ? 36 : 60) // 툴바와 드롭다운 메뉴 사이 간격 증가
                     
                     // 정확한 메뉴 위치에 드롭다운 배치
                     HStack {
@@ -359,7 +359,7 @@ struct FloatingToolbarView: View {
     /// - Parameter menuType: 메뉴 타입
     /// - Returns: 완벽한 스타일과 접근성을 가진 메뉴 오버레이
     private func menuOverlay(for menuType: MenuType) -> some View {
-        VStack(alignment: .leading, spacing: 0) {
+        VStack(alignment: .leading, spacing: 8) {
             ForEach(menuItems(for: menuType)) { item in
                 Button(action: {
                     withAnimation(.easeInOut(duration: 0.15)) {
@@ -378,7 +378,7 @@ struct FloatingToolbarView: View {
                             .lineLimit(1)
                             .foregroundColor(item.isEnabled ? .primary : .secondary)
                     }
-                    .frame(height: 36)
+                    .frame(height: 44)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .contentShape(Rectangle())
                 }
@@ -426,6 +426,11 @@ struct FloatingToolbarView: View {
             // 프로젝트와 내보내기는 추가로 5픽셀 더 왼쪽으로
             if menuType == .project || menuType == .export {
                 offset -= 5 // 추가 5픽셀 왼쪽으로 이동
+            }
+            
+            // 프로젝트 메뉴는 더 왼쪽으로 이동해서 다른 메뉴들과 간격 확보
+            if menuType == .project {
+                offset -= 20 // 추가 20픽셀 왼쪽으로 이동
             }
         }
         
