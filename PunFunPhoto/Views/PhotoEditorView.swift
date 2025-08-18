@@ -361,7 +361,7 @@ struct PhotoEditorView: View {
                 Color.clear // 모든 디바이스에서 배경색을 상위 뷰에서 처리
                 VStack {
                     Spacer()
-                        .frame(height: UIDevice.current.userInterfaceIdiom == .phone ? 20 : 10) // 전체 화면을 10픽셀 내림
+                        .frame(height: UIDevice.current.userInterfaceIdiom == .phone ? 30 : 20) // 전체 화면을 10픽셀 더 내림
                     mainCanvas(scaleFactor: scaleFactor)
                         .padding(.horizontal, 20) // 좌우 여백 추가
                         .padding(.vertical, 15)   // 상하 여백을 5픽셀 줄여서 캔버스를 위로 올림
