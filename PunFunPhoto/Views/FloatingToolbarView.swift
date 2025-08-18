@@ -214,11 +214,8 @@ struct FloatingToolbarView: View {
                             .overlay {
                                 ipadTopToolbarContent
                             }
+                        CenterToastView(message: toastMessage, type: toastType.toCenterToastType, isVisible: $showToast)
                     }
-                    .overlay(
-                        // 드롭다운 메뉴 오버레이
-                        selectedMenu != nil ? AnyView(ipadSubmenuOverlay) : AnyView(Color.clear)
-                    )
                 }
             }
             .overlay(
@@ -688,6 +685,7 @@ struct FloatingToolbarView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .padding(.top, getSafeAreaInsets().top)
+        .overlay(ipadSubmenuOverlay)
     }
     
     /// 아이패드용 상단 툴바 버튼 (최종 버전)

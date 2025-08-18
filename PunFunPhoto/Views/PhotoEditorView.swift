@@ -317,7 +317,7 @@ struct PhotoEditorView: View {
             let baseScaleFactor = max(0.1, min(scaleW, scaleH))
             
             // 메뉴 상태 관계없이 동일 스케일 기준. 아이폰은 조금 키움
-            let scaleFactor = UIDevice.current.userInterfaceIdiom == .pad ? baseScaleFactor * 1.3 : baseScaleFactor * 1.5
+            let scaleFactor = UIDevice.current.userInterfaceIdiom == .pad ? baseScaleFactor * 1.0 : baseScaleFactor * 1.5
 
             // context menu 관련 클로저를 computed property에서 boxIndex를 사용하도록 변경
             let onPick: () -> Void = {
