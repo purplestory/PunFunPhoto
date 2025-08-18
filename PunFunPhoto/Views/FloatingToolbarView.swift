@@ -97,16 +97,38 @@ struct FloatingToolbarView: View {
     }
     
     /// 가이드에 따른 동적 레이아웃 계산
+    /// 디바이스 타입에 따라 자동 최적화
     private var dynamicSpacing: CGFloat {
-        isMobile ? 40 : 80
+        if isMobile {
+            return 24 // 아이폰: 적당한 간격
+        } else {
+            return 80 // 아이패드: 넉넉한 간격
+        }
     }
     
     private var dynamicPadding: CGFloat {
-        isMobile ? 10 : 20
+        if isMobile {
+            return 10 // 아이폰: 컴팩트한 패딩
+        } else {
+            return 20 // 아이패드: 넉넉한 패딩
+        }
     }
     
     private var dynamicFontSize: CGFloat {
-        isMobile ? 15 : 16
+        if isMobile {
+            return 15 // 아이폰: 작은 폰트
+        } else {
+            return 16 // 아이패드: 큰 폰트
+        }
+    }
+    
+    /// 드롭다운 메뉴와 툴바 사이 간격 (디바이스별 최적화)
+    private var dropdownSpacing: CGFloat {
+        if isMobile {
+            return 46 // 아이폰: 적당한 간격
+        } else {
+            return 69 // 아이패드: 넉넉한 간격
+        }
     }
     
     // MARK: - View States
@@ -177,7 +199,7 @@ struct FloatingToolbarView: View {
             if let selected = selectedMenu {
                 VStack(spacing: 0) {
                     Spacer()
-                        .frame(height: isMobile ? 61 : 69) // 툴바 높이만큼 여백 + 25픽셀 추가
+                        .frame(height: dropdownSpacing) // 툴바 높이만큼 여백 + 25픽셀 추가
                     
                     // 정확한 메뉴 위치에 드롭다운 배치
                     HStack {
@@ -333,7 +355,7 @@ struct FloatingToolbarView: View {
                     .font(.system(size: 16, weight: .medium))
             }
             .foregroundColor(.primary)
-            .padding(.horizontal, 20)
+            .padding(.horizontal, isMobile ? 14 : 20)
             .contentShape(Rectangle())
             .background(
                 GeometryReader { geo in
