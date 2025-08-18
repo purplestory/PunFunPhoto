@@ -6,11 +6,28 @@ struct OrientationGuideView: View {
 
     var body: some View {
         ZStack {
-//            Color.white
+            // 아이폰용 RGB 그라데이션 배경
+            if UIDevice.current.userInterfaceIdiom == .phone {
+                LinearGradient(
+                    gradient: Gradient(colors: [
+                        Color(red: 0.2, green: 0.6, blue: 1.0),
+                        Color(red: 0.8, green: 0.4, blue: 1.0),
+                        Color(red: 1.0, green: 0.6, blue: 0.8)
+                    ]),
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+                .ignoresSafeArea()
+            }
+            
             ContentView()
                 .environmentObject(appState)
         }
-//        .background(Color.white)
+        .background(
+            UIDevice.current.userInterfaceIdiom == .phone ? 
+                Color.clear : 
+                Color.white
+        )
         .onChange(of: appState.currentProjectURL) { _, newURL in
             if let url = newURL {
                 Task {
