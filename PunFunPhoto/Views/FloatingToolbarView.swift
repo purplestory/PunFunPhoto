@@ -441,31 +441,18 @@ struct FloatingToolbarView: View {
         // 드롭다운 메뉴를 해당 메뉴 버튼의 내용 시작점에 정렬
         var offset = menuLeftX - toolbarLeftX
         
-        // 아이패드 전용 미세 조정 (스케일 팩터 고려)
+        // 아이패드 전용 미세 조정 (모든 보정값 제거)
         if UIDevice.current.userInterfaceIdiom == .pad {
-            // 스케일 팩터로 나누어 실제 픽셀 단위로 보정
-            let scaleAdjustedOffset: CGFloat
-            switch menuType {
-            case .project:
-                scaleAdjustedOffset = 3 / scaleFactor // 프로젝트: +3픽셀
-            case .photocard:
-                scaleAdjustedOffset = 8 / scaleFactor // 포토카드: +8픽셀
-            case .toploader:
-                scaleAdjustedOffset = 3 / scaleFactor // 탑로더: +3픽셀
-            case .view:
-                scaleAdjustedOffset = 13 / scaleFactor // 보기: +13픽셀
-            case .export:
-                scaleAdjustedOffset = 3 / scaleFactor // 내보내기: +3픽셀
-            }
-            offset += scaleAdjustedOffset
+            // 모든 보정값 제거 - 기본 정렬만 사용
+            // offset += 0 // 아무것도 추가하지 않음
         }
         
-        print("[DEBUG] 📍 스케일 팩터 고려한 메뉴 위치 계산 - \(menuType):")
+        print("[DEBUG] 📍 기본 메뉴 위치 계산 (보정값 제거) - \(menuType):")
         print("  - 메뉴 왼쪽 X: \(menuLeftX)")
         print("  - 툴바 왼쪽 X: \(toolbarLeftX)")
         print("  - 기본 오프셋: \(offset)")
         print("  - 스케일 팩터: \(scaleFactor)")
-        print("  - 스케일 보정된 오프셋: \(UIDevice.current.userInterfaceIdiom == .pad ? "적용됨" : "적용안됨")")
+        print("  - 보정값: 모든 보정값 제거됨")
         
         return offset
     }
