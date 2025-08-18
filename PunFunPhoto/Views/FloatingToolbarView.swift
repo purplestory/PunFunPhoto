@@ -166,7 +166,7 @@ struct FloatingToolbarView: View {
     @State private var toolbarFrame: CGRect = .zero
     @State private var showTopLoaderLibrary = false
     @State private var selectedPhotoForTopLoader: PhotoState? = nil
-    @State private var menuWidth: CGFloat = 0
+
     @State private var submenuHeight: CGFloat = 0
     @State private var showToast = false
     @State private var toastMessage: String = ""
