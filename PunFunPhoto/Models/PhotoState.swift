@@ -16,8 +16,10 @@ final class PhotoState: ObservableObject {
 
         print("--- DEBUG: PhotoState.setImage ---")
         print("original image size: \(image.size)")
+        print("boxSize: \(boxSize)")
         print("coverScale (cover-fit): \(coverScale)")
         print("scale set to 1.0, offset set to .zero")
+        print("totalScale will be: \(coverScale * scale)")
         print("-------------------------------")
     }
 
@@ -32,7 +34,7 @@ final class PhotoState: ObservableObject {
         scale = Swift.min(Swift.max(value, min), max)
     }
 
-    // cover-fit 기준 스케일 계산
+    // cover-fit 기준 스케일 계산 (이미지가 박스를 완전히 덮도록)
     private func calculateCoverScale(for imageSize: CGSize, boxSize: CGSize) -> CGFloat {
         let widthRatio = boxSize.width / imageSize.width
         let heightRatio = boxSize.height / imageSize.height

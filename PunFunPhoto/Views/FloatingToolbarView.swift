@@ -1,6 +1,7 @@
 import SwiftUI
 import UniformTypeIdentifiers
 import ZipArchive
+import UIKit
 
 /// 메뉴 아이템
 struct MenuItem: Identifiable {
@@ -64,6 +65,7 @@ struct FloatingToolbarView: View {
         showTopLoader2ContextMenu: Binding<Bool?>,
         onMenuChange: (() -> Void)? = nil,
         onClosePopupMenus: (() -> Void)? = nil,
+        onMenuStateChange: ((Bool) -> Void)? = nil,
         scaleFactor: CGFloat = 1.0
 
     ) {
@@ -81,6 +83,7 @@ struct FloatingToolbarView: View {
         self._showTopLoader2ContextMenu = showTopLoader2ContextMenu
         self.onMenuChange = onMenuChange
         self.onClosePopupMenus = onClosePopupMenus
+        self.onMenuStateChange = onMenuStateChange
         self.scaleFactor = scaleFactor
         print("[DEBUG] FloatingToolbarView init - onClosePopupMenus 콜백 저장됨: \(onClosePopupMenus != nil)")
     }
@@ -99,6 +102,11 @@ struct FloatingToolbarView: View {
         horizontalSizeClass == .regular || (horizontalSizeClass == .compact && verticalSizeClass == .compact)
     }
     
+    /// 명시적 디바이스 타입 체크 (아이폰 여부)
+    private var isPhone: Bool {
+        UIDevice.current.userInterfaceIdiom == .phone
+    }
+    
     /// 가이드에 따른 동적 레이아웃 계산
     private var dynamicSpacing: CGFloat {
         isMobile ? 16 : (isTablet ? 30 : 20) // 아이패드에서 간격 확대
@@ -110,6 +118,11 @@ struct FloatingToolbarView: View {
     
     private var dynamicFontSize: CGFloat {
         isMobile ? 15 : 16
+    }
+    
+    /// 메뉴 폭 (화면의 1/5)
+    private var menuWidth: CGFloat {
+        max(220, UIScreen.main.bounds.width / 5) // 최소 사용성 보장
     }
     
     /// 아이패드 전용 상단 여백 계산
@@ -132,144 +145,111 @@ struct FloatingToolbarView: View {
     }
     
     // MARK: - State Variables
-    @State private var selectedMenu: MenuType? = nil // 현재 선택된 메뉴
     @State private var showToast = false // 토스트 표시 여부
     @State private var toastMessage = "" // 토스트 메시지
     @State private var toastType: AlertMessage.AlertType = .success // 토스트 타입
+    @State private var isMenuOpen: Bool = UIDevice.current.userInterfaceIdiom == .phone ? false : true // 메뉴 패널 열림/닫힘 상태 (아이폰: 접힘, 아이패드: 펼침)
     
-
+    // 파일 선택 및 저장 관련 상태
+    @State private var isFileImporterPresented = false
+    @State private var showSaveProjectPrompt = false
     
-    /// 가이드에 따른 완벽한 툴바 컨텐츠
-    /// 반응형 디자인과 완벽한 정렬을 구현
-    private var toolbarContent: some View {
-        Group {
-            if UIDevice.current.userInterfaceIdiom == .phone {
-                // 아이폰: 세로 확장 가능한 툴바
-                VStack(spacing: 0) {
-                    // 메인 툴바
-                    HStack(spacing: 12) {
-                        ForEach(MenuType.allCases, id: \.self) { menuType in
-                            toolbarButton(menuType: menuType)
-                        }
-                        Spacer()
-                    }
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 12)
-                    .background(Color(.systemBackground))
-                    .overlay(
-                        Rectangle()
-                            .frame(height: 0.5)
-                            .foregroundColor(Color(.separator))
-                            .offset(y: 0.25),
-                        alignment: .bottom
-                    )
-                    
-                    // 확장된 메뉴 영역
-                    if let selected = selectedMenu {
-                        VStack(spacing: 0) {
-                            ForEach(menuItems(for: selected)) { item in
-                                Button(action: {
-                                    withAnimation(.easeInOut(duration: 0.15)) {
-                                        item.action()
-                                        selectedMenu = nil
-                                        onMenuChange?()
-                                    }
-                                }) {
-                                    HStack(spacing: 12) {
-                                        Image(systemName: item.icon)
-                                            .font(.system(size: 18))
-                                            .foregroundColor(item.isEnabled ? .primary : .secondary)
-                                            .frame(width: 24)
-                                        Text(item.title)
-                                            .font(.system(size: 16, weight: .medium))
-                                            .foregroundColor(item.isEnabled ? .primary : .secondary)
-                                        Spacer()
-                                    }
-                                    .padding(.horizontal, 20)
-                                    .padding(.vertical, 16)
-                                    .background(Color(.systemBackground))
+    // 메뉴 상태를 외부에 알리는 콜백
+    var onMenuStateChange: ((Bool) -> Void)? = nil
+    
+    // MARK: - Main View
+    var body: some View {
+        GeometryReader { geometry in
+            ZStack(alignment: .topLeading) {
+                toolbarContent
+                if isPhone && !isMenuOpen {
+                    if let icon = appIconUIImage() {
+                        Image(uiImage: icon)
+                            .resizable()
+                            .renderingMode(.original)
+                            .scaledToFit()
+                            .frame(width: 72, height: 72)
+                            .background(Color.clear)
+                            .allowsHitTesting(true)
+                            .drawingGroup()
+                            .compositingGroup()
+                            .blendMode(.normal)
+                            .onTapGesture {
+                                withAnimation(.easeInOut(duration: 0.2)) {
+                                    isMenuOpen = true
+                                    onMenuStateChange?(true)
                                 }
-                                .buttonStyle(PlainButtonStyle())
-                                .disabled(!item.isEnabled)
-                                
-                                Divider()
-                                    .padding(.leading, 56)
                             }
+                            .padding(.leading, 12)
+                            .padding(.top, topPaddingForDevice + 8)
+                    } else {
+                        Button(action: {
+                            withAnimation(.easeInOut(duration: 0.2)) {
+                                isMenuOpen = true
+                                onMenuStateChange?(true)
+                            }
+                        }) {
+                            Text("펀펀포토")
+                                .font(.system(size: 14, weight: .semibold))
+                                .foregroundColor(.primary)
+                                .padding(.horizontal, 12)
+                                .padding(.vertical, 8)
+                                .background(Color(.systemGray6))
+                                .clipShape(RoundedRectangle(cornerRadius: 8))
                         }
-                        .background(Color(.systemBackground))
-                        .transition(.asymmetric(
-                            insertion: .move(edge: .top).combined(with: .opacity),
-                            removal: .move(edge: .top).combined(with: .opacity)
-                        ))
+                        .buttonStyle(PlainButtonStyle())
+                        .padding(.leading, 12)
+                        .padding(.top, topPaddingForDevice + 8)
                     }
                 }
-                .background(Color(.systemBackground))
-                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-                .shadow(color: Color.black.opacity(0.1), radius: 8, x: 0, y: 4)
-            } else {
-                // 아이패드: 가로 확장 가능한 툴바
-                VStack(spacing: 0) {
-                    // 메인 툴바
-                    HStack(spacing: 8) {
-                        ForEach(MenuType.allCases, id: \.self) { menuType in
-                            toolbarButton(menuType: menuType)
-                        }
-                        Spacer()
-                    }
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 12)
-                    .background(Color(.systemBackground))
-                    .overlay(
-                        Rectangle()
-                            .frame(height: 0.5)
-                            .foregroundColor(Color(.separator))
-                            .offset(y: 0.25),
-                        alignment: .bottom
-                    )
-                    
-                    // 확장된 메뉴 영역
-                    if let selected = selectedMenu {
-                        VStack(spacing: 0) {
-                            ForEach(menuItems(for: selected)) { item in
-                                Button(action: {
-                                    withAnimation(.easeInOut(duration: 0.15)) {
-                                        item.action()
-                                        selectedMenu = nil
-                                        onMenuChange?()
-                                    }
-                                }) {
-                                    HStack(spacing: 12) {
-                                        Image(systemName: item.icon)
-                                            .font(.system(size: 18))
-                                            .foregroundColor(item.isEnabled ? .primary : .secondary)
-                                            .frame(width: 24)
-                                        Text(item.title)
-                                            .font(.system(size: 16, weight: .medium))
-                                            .foregroundColor(item.isEnabled ? .primary : .secondary)
-                                        Spacer()
-                                    }
-                                    .padding(.horizontal, 20)
-                                    .padding(.vertical, 16)
-                                    .background(Color(.systemBackground))
-                                }
-                                .buttonStyle(PlainButtonStyle())
-                                .disabled(!item.isEnabled)
-                                
-                                Divider()
-                                    .padding(.leading, 56)
-                            }
-                        }
-                        .background(Color(.systemBackground))
-                        .transition(.asymmetric(
-                            insertion: .move(edge: .top).combined(with: .opacity),
-                            removal: .move(edge: .top).combined(with: .opacity)
-                        ))
-                    }
-                }
-                .background(Color(.systemBackground))
-                .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
-                .shadow(color: Color.black.opacity(0.1), radius: 6, x: 0, y: 3)
             }
+            .overlay(
+                // 아이폰에서만 토스트 메시지를 화면 중앙에 표시
+                Group {
+                    if isPhone {
+                        CenterToastView(message: toastMessage, type: toastType.toCenterToastType, isVisible: $showToast)
+                    }
+                }
+            )
+        }
+        .ignoresSafeArea()
+        .coordinateSpace(name: "CanvasSpace")
+        .onAppear {
+            print("[DEBUG] FloatingToolbarView init - onClosePopupMenus 콜백 저장됨: \(onClosePopupMenus != nil)")
+        }
+        .onChange(of: selectedMenu) { _, newValue in
+            print("[DEBUG] 🔥 selectedMenu 변경됨: \(newValue?.title ?? "nil")")
+            if newValue != nil {
+                print("[DEBUG] 🔥 상단 메뉴 열림 - 컨텍스트 메뉴 닫기")
+                onClosePopupMenus?()
+            }
+        }
+        // 파일 선택기 sheet
+        .fileImporter(
+            isPresented: $isFileImporterPresented,
+            allowedContentTypes: [UTType.punfunProject],
+            allowsMultipleSelection: false
+        ) { result in
+            handleFileImport(result: result)
+        }
+        // 저장된 프로젝트 목록 sheet
+        .sheet(isPresented: $showSaveProjectPrompt) {
+            SavedProjectListView(
+                isPresented: $showSaveProjectPrompt,
+                photo1: photo1,
+                photo2: photo2
+            )
+            .environmentObject(appState)
+        }
+    }
+    
+    // MARK: - Toolbar Content
+    private var toolbarContent: some View {
+        HStack(spacing: 0) {
+            if isMenuOpen {
+                menuPanel
+            }
+            canvasArea
         }
         .background(
             GeometryReader { geo in
@@ -279,112 +259,230 @@ struct FloatingToolbarView: View {
         )
     }
     
-    var body: some View {
-        GeometryReader { geometry in
-            ZStack(alignment: .top) {
-                Color.clear
-                    .overlay {
-                        toolbarContent
-                    }
-                CenterToastView(message: toastMessage, type: toastType.toCenterToastType, isVisible: $showToast)
+    // MARK: - Sub Views
+    
+    /// 왼쪽 메뉴 패널 (화면의 1/5 폭)
+    private var menuPanel: some View {
+        VStack(spacing: 0) {
+            menuHeader
+            Divider()
+            menuList
+        }
+        .frame(width: menuWidth)
+        .background(Color(.systemBackground))
+    }
+    
+    /// 메뉴 헤더
+    private var menuHeader: some View {
+        HStack {
+            Text("펀펀포토")
+                .font(.system(size: 18, weight: .semibold))
+                .foregroundColor(.primary)
+            Spacer()
+            Button(action: {
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    selectedMenu = nil
+                    isMenuOpen = false
+                    onClosePopupMenus?()
+                    onMenuStateChange?(false)
+                }
+            }) {
+                Image(systemName: "xmark")
+                    .font(.system(size: 16, weight: .medium))
+                    .foregroundColor(.secondary)
+                    .frame(width: 32, height: 32)
+                    .background(Color(.systemGray6))
+                    .clipShape(Circle())
             }
         }
-        .ignoresSafeArea()
-        .coordinateSpace(name: "CanvasSpace")
-        .onAppear {
-            print("[DEBUG] FloatingToolbarView init - onClosePopupMenus 콜백 저장됨: \(onClosePopupMenus != nil)")
+        .padding(.horizontal, 20)
+        .padding(.vertical, 16)
+        .background(Color(.systemBackground))
+    }
+    
+    /// 메뉴 목록
+    private var menuList: some View {
+        ScrollView {
+            VStack(spacing: 0) {
+                ForEach(MenuType.allCases, id: \.self) { menuType in
+                    menuItemView(for: menuType)
+                }
+            }
+            .padding(.vertical, 8)
         }
-        .onChange(of: selectedMenu) { newValue in
-            print("[DEBUG] 🔥 selectedMenu 변경됨: \(newValue?.title ?? "nil")")
-            if newValue != nil {
-                print("[DEBUG] 🔥 상단 메뉴 열림 - 컨텍스트 메뉴 닫기")
-                onClosePopupMenus?()
+    }
+    
+    /// 개별 메뉴 아이템 뷰
+    private func menuItemView(for menuType: MenuType) -> some View {
+        VStack(spacing: 0) {
+            mainMenuButton(for: menuType)
+            if selectedMenu == menuType {
+                subMenuItems(for: menuType)
             }
         }
     }
     
-    // MARK: - Helper Views
-    /// 가이드에 따른 완벽한 툴바 버튼
-    /// 반응형 디자인과 접근성을 모두 고려한 구현
-    private func toolbarButton(menuType: MenuType) -> some View {
-        let isSelected = selectedMenu == menuType
-        let hasSubmenu = !menuItems(for: menuType).isEmpty
-        
-        return Group {
-            if UIDevice.current.userInterfaceIdiom == .phone {
-                // 아이폰: 세로 배치
-                VStack(spacing: 4) {
-                    Image(systemName: menuType.icon)
-                        .font(.system(size: 16, weight: .medium))
-                        .foregroundColor(isSelected ? .white : .primary)
-                        .frame(width: 24, height: 24)
-                    
-                    Text(menuType.title)
-                        .font(.system(size: 12, weight: .medium))
-                        .foregroundColor(isSelected ? .white : .primary)
-                        .lineLimit(1)
+    /// 메인 메뉴 버튼
+    private func mainMenuButton(for menuType: MenuType) -> some View {
+        Button(action: {
+            withAnimation(.easeInOut(duration: 0.2)) {
+                if selectedMenu == menuType {
+                    selectedMenu = nil
+                } else {
+                    selectedMenu = menuType
                 }
-                .frame(width: 60, height: 50)
-                .background(
-                    RoundedRectangle(cornerRadius: 8, style: .continuous)
-                        .fill(isSelected ? Color.blue : Color(.systemGray6))
-                )
-                .overlay(
-                    RoundedRectangle(cornerRadius: 8, style: .continuous)
-                        .stroke(isSelected ? Color.blue : Color(.separator).opacity(0.3), lineWidth: 1)
-                )
-                .onTapGesture {
-                    withAnimation(.easeInOut(duration: 0.2)) {
-                        if isSelected {
-                            selectedMenu = nil
-                        } else {
-                            selectedMenu = menuType
-                        }
-                    }
-                }
-                .accessibilityLabel(menuType.title)
-                .accessibilityHint(hasSubmenu ? "하위 메뉴를 보려면 탭하세요" : "기능을 실행하려면 탭하세요")
-                .accessibilityValue(isSelected ? "선택됨" : "선택되지 않음")
-            } else {
-                // 아이패드: 가로 배치
-                HStack(spacing: 6) {
-                    Image(systemName: menuType.icon)
-                        .font(.system(size: 16, weight: .medium))
-                        .foregroundColor(isSelected ? .white : .primary)
-                        .frame(width: 20, height: 20)
-                    
-                    Text(menuType.title)
-                        .font(.system(size: 14, weight: .medium))
-                        .foregroundColor(isSelected ? .white : .primary)
-                        .lineLimit(1)
-                }
-                .padding(.horizontal, 12)
-                .padding(.vertical, 8)
-                .background(
-                    RoundedRectangle(cornerRadius: 6, style: .continuous)
-                        .fill(isSelected ? Color.blue : Color(.systemGray6))
-                )
-                .overlay(
-                    RoundedRectangle(cornerRadius: 6, style: .continuous)
-                        .stroke(isSelected ? Color.blue : Color(.separator).opacity(0.3), lineWidth: 1)
-                )
-                .onTapGesture {
-                    withAnimation(.easeInOut(duration: 0.2)) {
-                        if isSelected {
-                            selectedMenu = nil
-                        } else {
-                            selectedMenu = menuType
-                        }
-                    }
-                }
-                .accessibilityLabel(menuType.title)
-                .accessibilityHint(hasSubmenu ? "하위 메뉴를 보려면 탭하세요" : "기능을 실행하려면 탭하세요")
-                .accessibilityValue(isSelected ? "선택됨" : "선택되지 않음")
             }
+        }) {
+            HStack {
+                Image(systemName: menuType.icon)
+                    .font(.system(size: 18, weight: .medium))
+                    .foregroundColor(selectedMenu == menuType ? .blue : .primary)
+                    .frame(width: 24)
+                
+                Text(menuType.title)
+                    .font(.system(size: 16, weight: .medium))
+                    .foregroundColor(selectedMenu == menuType ? .blue : .primary)
+                
+                Spacer()
+                
+                // 화살표 아이콘 (펼쳐진/닫힌 상태 구분)
+                if selectedMenu == menuType {
+                    Text("∧")
+                        .font(.system(size: 16, weight: .medium))
+                        .foregroundColor(.blue)
+                } else {
+                    Text("∨")
+                        .font(.system(size: 16, weight: .medium))
+                        .foregroundColor(.secondary)
+                }
+            }
+            .padding(.horizontal, 20)
+            .padding(.vertical, 16)
+            .background(
+                selectedMenu == menuType ? Color.blue.opacity(0.08) : Color.clear
+            )
+        }
+        .buttonStyle(PlainButtonStyle())
+    }
+    
+    /// 하위 메뉴 아이템들
+    private func subMenuItems(for menuType: MenuType) -> some View {
+        VStack(spacing: 0) {
+            ForEach(menuItems(for: menuType)) { item in
+                Button(action: {
+                    withAnimation(.easeInOut(duration: 0.15)) {
+                        item.action()
+                        selectedMenu = nil
+                        onMenuChange?()
+                    }
+                }) {
+                    HStack(spacing: 12) {
+                        Image(systemName: item.icon)
+                            .font(.system(size: 16))
+                            .foregroundColor(item.isEnabled ? .primary : .secondary)
+                            .frame(width: 20)
+                        Text(item.title)
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundColor(item.isEnabled ? .primary : .secondary)
+                        Spacer()
+                    }
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 12)
+                    .padding(.leading, 20) // 들여쓰기
+                    .background(Color.blue.opacity(0.05))
+                }
+                .buttonStyle(PlainButtonStyle())
+                .disabled(!item.isEnabled)
+                
+                Divider()
+                    .padding(.leading, 52)
+                    .opacity(0.3)
+            }
+        }
+        .background(Color(.systemBackground))
+        .transition(.asymmetric(
+            insertion: .move(edge: .top).combined(with: .opacity),
+            removal: .move(edge: .top).combined(with: .opacity)
+        ))
+    }
+    
+    /// 오른쪽 캔버스 영역 (메뉴 상태에 따라 동적 크기 조정)
+    /// 실제 편집 가능한 캔버스는 `PhotoEditorView`가 렌더링하며,
+    /// 이 뷰는 메뉴 영역 외에는 아무 것도 그리지 않도록 비워둡니다.
+    private var canvasArea: some View {
+        GeometryReader { geometry in
+            Color.clear
+                .allowsHitTesting(false) // 아래 편집 캔버스의 터치를 가로막지 않음
+                .frame(
+                    width: geometry.size.width,
+                    height: geometry.size.height
+                )
+                .offset(x: isMenuOpen ? menuWidth : 0) // 메뉴가 열려있을 때 오른쪽으로 이동
         }
     }
     
     // MARK: - Helper Functions
+    
+    /// 앱 아이콘(또는 자산의 로고)을 UIImage로 가져오기
+    private func appIconUIImage() -> UIImage? {
+        // 1순위: 투명 배경 로고를 우선 사용
+        if let transparent = UIImage(named: "punfun_logo_transparent") { return transparent }
+        // 2순위: 기본 로고
+        if let logo = UIImage(named: "punfun_logo") { return logo }
+        // 실패 시 앱 아이콘 중 하나를 시도
+        if let iconsDict = Bundle.main.infoDictionary?["CFBundleIcons"] as? [String: Any],
+           let primaryDict = iconsDict["CFBundlePrimaryIcon"] as? [String: Any],
+           let files = primaryDict["CFBundleIconFiles"] as? [String],
+           let name = files.last,
+           let image = UIImage(named: name) {
+            return image
+        }
+        return nil
+    }
+    
+    /// 파일 import 처리
+    private func handleFileImport(result: Result<[URL], Error>) {
+        switch result {
+        case .success(let urls):
+            if let url = urls.first {
+                print("✅ 선택된 파일:", url)
+                Task {
+                    await loadProjectManually(from: url)
+                }
+            } else {
+                showToast = true
+                toastMessage = "선택된 파일이 없습니다."
+            }
+        case .failure(let error):
+            showToast = true
+            toastMessage = "파일 가져오기 실패: \(error.localizedDescription)"
+        }
+    }
+    
+    /// 프로젝트 수동 로드
+    @MainActor
+    private func loadProjectManually(from url: URL) async {
+        // 기존 함수 사용
+        loadProjectFromArchive(from: url, photo1: photo1, photo2: photo2)
+        
+        showToast = true
+        toastMessage = "프로젝트가 성공적으로 로드되었습니다."
+    }
+    
+    /// Safe Area Insets 가져오기
+    private func getSafeAreaInsets() -> EdgeInsets {
+        guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+              let keyWindow = windowScene.windows.first(where: { $0.isKeyWindow }) else {
+            return EdgeInsets()
+        }
+        let insets = keyWindow.safeAreaInsets
+        return EdgeInsets(
+            top: insets.top,
+            leading: insets.left,
+            bottom: insets.bottom,
+            trailing: insets.right
+        )
+    }
     
     /// 메뉴 아이템 생성
     /// - Parameter menuType: 메뉴 타입
@@ -393,34 +491,163 @@ struct FloatingToolbarView: View {
         switch menuType {
         case .project:
             return [
-                MenuItem(title: "새 프로젝트", icon: "plus.square", action: { /* 새 프로젝트 생성 */ }),
-                MenuItem(title: "프로젝트 열기", icon: "folder", action: { /* 프로젝트 열기 */ }),
-                MenuItem(title: "최근 프로젝트", icon: "clock", action: { /* 최근 프로젝트 */ })
+                MenuItem(title: "새 프로젝트", icon: "plus.square", action: { 
+                    // 새 프로젝트 생성
+                    photo1.originalImage = nil
+                    photo2.originalImage = nil
+                    topLoader1.detach()
+                    topLoader2.detach()
+                    showToast = true
+                    toastMessage = "새 프로젝트가 생성되었습니다."
+                }),
+                MenuItem(title: "프로젝트 열기", icon: "folder", action: { 
+                    // 프로젝트 열기 - 저장된 프로젝트 목록에서 선택
+                    showSaveProjectPrompt = true
+                }),
+                MenuItem(title: "파일에서 직접 열기", icon: "folder.badge.plus", action: { 
+                    // 파일에서 직접 열기 - 파일 선택기 열기
+                    isFileImporterPresented = true
+                }),
+                MenuItem(title: "저장", icon: "square.and.arrow.down", action: { 
+                    // 저장
+                    if let _ = saveProject(photo1: photo1, photo2: photo2) {
+                        showToast = true
+                        toastMessage = "프로젝트가 저장되었습니다."
+                    } else {
+                        showToast = true
+                        toastMessage = "저장에 실패했습니다."
+                    }
+                }),
+                MenuItem(title: "새 이름으로 저장", icon: "square.and.pencil", action: { 
+                    // 새 이름으로 저장 - SaveProjectPrompt 열기
+                    showSaveProjectPrompt = true
+                })
             ]
         case .photocard:
             return [
-                MenuItem(title: "포토카드 추가", icon: "photo", action: { /* 포토카드 추가 */ }),
-                MenuItem(title: "포토카드 편집", icon: "pencil", action: { /* 포토카드 편집 */ }),
-                MenuItem(title: "포토카드 삭제", icon: "trash", action: { /* 포토카드 삭제 */ })
+                MenuItem(title: "사진 불러오기", icon: "photo.on.rectangle", action: { 
+                    // 사진 불러오기
+                    photoPickerMode = .전체
+                    showPhotoPicker = true
+                }),
+                MenuItem(title: "편집 초기화", icon: "arrow.counterclockwise", action: { 
+                    // 편집 초기화
+                    photo1.reset()
+                    photo2.reset()
+                    showToast = true
+                    toastMessage = "편집이 초기화되었습니다."
+                }),
+                MenuItem(title: "사진 복제", icon: "plus.square.on.square", action: { 
+                    // 사진 복제
+                    if let image1 = photo1.originalImage {
+                        photo2.originalImage = image1
+                        showToast = true
+                        toastMessage = "사진이 복제되었습니다."
+                    }
+                }),
+                MenuItem(title: "좌우 사진 바꾸기", icon: "arrow.left.arrow.right", action: { 
+                    // 좌우 사진 바꾸기 - 모든 상태값을 함께 바꿈
+                    let tempImage = photo1.originalImage
+                    let tempScale = photo1.scale
+                    let tempOffset = photo1.offset
+                    let tempCoverScale = photo1.coverScale
+                    
+                    photo1.originalImage = photo2.originalImage
+                    photo1.scale = photo2.scale
+                    photo1.offset = photo2.offset
+                    photo1.coverScale = photo2.coverScale
+                    
+                    photo2.originalImage = tempImage
+                    photo2.scale = tempScale
+                    photo2.offset = tempOffset
+                    photo2.coverScale = tempCoverScale
+                    
+                    showToast = true
+                    toastMessage = "좌우 사진이 바뀌었습니다."
+                })
             ]
         case .toploader:
             return [
-                MenuItem(title: "탑로더 추가", icon: "plus.circle", action: { /* 탑로더 추가 */ }),
-                MenuItem(title: "탑로더 편집", icon: "pencil.circle", action: { /* 탑로더 편집 */ }),
-                MenuItem(title: "탑로더 삭제", icon: "minus.circle", action: { /* 탑로더 삭제 */ })
+                MenuItem(title: "왼쪽 탑로더 관리", icon: "square.grid.2x2", action: { 
+                    // 왼쪽 탑로더 관리
+                    showTopLoader1ContextMenu = true
+                }),
+                MenuItem(title: "오른쪽 탑로더 관리", icon: "square.grid.2x2", action: { 
+                    // 오른쪽 탑로더 관리
+                    showTopLoader2ContextMenu = true
+                }),
+                MenuItem(title: "탑로더 복제", icon: "square.on.square", action: { 
+                    // 탑로더 복제
+                    if topLoader1.showTopLoader {
+                        topLoader2.copyFrom(topLoader1)
+                        showToast = true
+                        toastMessage = "탑로더가 복제되었습니다."
+                    }
+                }),
+                MenuItem(title: "탑로더 모두 제거", icon: "xmark.circle", action: { 
+                    // 탑로더 모두 제거
+                    topLoader1.detach()
+                    topLoader2.detach()
+                    showToast = true
+                    toastMessage = "탑로더가 모두 제거되었습니다."
+                })
             ]
         case .view:
             return [
-                MenuItem(title: "확대/축소", icon: "magnifyingglass", action: { /* 확대/축소 */ }),
-                MenuItem(title: "그리드 보기", icon: "grid", action: { /* 그리드 보기 */ }),
-                MenuItem(title: "전체 화면", icon: "arrow.up.left.and.arrow.down.right", action: { /* 전체 화면 */ })
+                MenuItem(title: "커팅선 보기/가리기", icon: "rectangle.dashed", action: { 
+                    // 커팅선 보기/가리기
+                    showSafeFrame.toggle()
+                    showToast = true
+                    toastMessage = showSafeFrame ? "커팅선이 표시됩니다." : "커팅선이 숨겨집니다."
+                }),
+                MenuItem(title: "탑로더 보기/가리기", icon: "eye", action: { 
+                    // 탑로더 보기/가리기
+                    topLoader1.showTopLoader.toggle()
+                    topLoader2.showTopLoader.toggle()
+                    showToast = true
+                    toastMessage = topLoader1.showTopLoader ? "탑로더가 표시됩니다." : "탑로더가 숨겨집니다."
+                })
             ]
         case .export:
             return [
-                MenuItem(title: "이미지 저장", icon: "square.and.arrow.down", action: { /* 이미지 저장 */ }),
-                MenuItem(title: "PDF 내보내기", icon: "doc.text", action: { /* PDF 내보내기 */ }),
-                MenuItem(title: "공유하기", icon: "square.and.arrow.up", action: { /* 공유하기 */ })
+                MenuItem(title: "바로 인쇄하기", icon: "printer", action: { 
+                    // 바로 인쇄하기 - 실제 인쇄 기능 실행
+                    let combinedImage = ExportManager.renderCombinedImage(photo1: photo1, photo2: photo2)
+                    PhotoExportHelper.printImage(combinedImage)
+                    showToast = true
+                    toastMessage = "인쇄 대화상자가 열렸습니다."
+                }),
+                MenuItem(title: "사진으로 내보내기", icon: "photo", action: { 
+                    // 사진으로 내보내기 - 실제 사진 앱에 저장
+                    let combinedImage = ExportManager.renderCombinedImage(photo1: photo1, photo2: photo2)
+                    ExportManager.saveToPhotos(combinedImage)
+                    showToast = true
+                    toastMessage = "포토카드가 사진 앱에 저장되었습니다."
+                }),
+                MenuItem(title: "파일로 내보내기", icon: "tray.and.arrow.down", action: { 
+                    // 파일로 내보내기 - 현재 프로젝트를 .pfp 파일로 저장
+                    if let savedURL = saveProjectAsArchive(photo1: photo1, photo2: photo2) {
+                        showToast = true
+                        toastMessage = "프로젝트가 저장되었습니다: \(savedURL.lastPathComponent)"
+                    } else {
+                        showToast = true
+                        toastMessage = "프로젝트 저장에 실패했습니다."
+                    }
+                })
             ]
+        }
+    }
+}
+
+// MARK: - Extensions
+
+/// AlertMessage.AlertType을 CenterToastView.AlertType으로 변환하는 extension
+extension AlertMessage.AlertType {
+    var toCenterToastType: CenterToastView.AlertType {
+        switch self {
+        case .success: return .success
+        case .error: return .error
+        case .warning: return .warning
         }
     }
 }
