@@ -282,6 +282,7 @@ struct FloatingToolbarView: View {
         VStack(spacing: 0) {
             menuHeader
             Divider()
+                .padding(.horizontal, 0)
             menuList
         }
         .frame(width: menuWidth)
@@ -313,6 +314,7 @@ struct FloatingToolbarView: View {
         }
         .padding(.horizontal, 20)
         .padding(.vertical, 16)
+        .padding(.bottom, 0) // 하단 여백 제거
         .background(Color(.systemBackground))
     }
     
@@ -352,12 +354,12 @@ struct FloatingToolbarView: View {
             HStack {
                 Image(systemName: menuType.icon)
                     .font(.system(size: 18, weight: .medium))
-                    .foregroundColor(selectedMenu == menuType ? .blue : .primary)
+                    .foregroundColor(selectedMenu == menuType ? Color(red: 126/255, green: 98/255, blue: 214/255) : .primary)
                     .frame(width: 24)
                 
                 Text(menuType.title)
                     .font(.system(size: 16, weight: .medium))
-                    .foregroundColor(selectedMenu == menuType ? .blue : .primary)
+                    .foregroundColor(selectedMenu == menuType ? Color(red: 126/255, green: 98/255, blue: 214/255) : .primary)
                 
                 Spacer()
                 
@@ -365,7 +367,7 @@ struct FloatingToolbarView: View {
                 if selectedMenu == menuType {
                     Text("∧")
                         .font(.system(size: 16, weight: .medium))
-                        .foregroundColor(.blue)
+                        .foregroundColor(Color(red: 126/255, green: 98/255, blue: 214/255))
                 } else {
                     Text("∨")
                         .font(.system(size: 16, weight: .medium))
@@ -375,7 +377,7 @@ struct FloatingToolbarView: View {
             .padding(.horizontal, 20)
             .padding(.vertical, 16)
             .background(
-                selectedMenu == menuType ? Color.blue.opacity(0.08) : Color.clear
+                selectedMenu == menuType ? Color(red: 126/255, green: 98/255, blue: 214/255).opacity(0.1) : Color.clear
             )
         }
         .buttonStyle(PlainButtonStyle())
