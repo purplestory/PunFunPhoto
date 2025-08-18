@@ -383,11 +383,9 @@ struct FloatingToolbarView: View {
             }
             .overlay(
                 // 아이폰에서만 토스트 메시지를 화면 중앙에 표시
-                Group {
-                    if UIDevice.current.userInterfaceIdiom == .phone {
-                        CenterToastView(message: toastMessage, type: toastType.toCenterToastType, isVisible: $showToast)
-                    }
-                }
+                UIDevice.current.userInterfaceIdiom == .phone ? 
+                    CenterToastView(message: toastMessage, type: toastType.toCenterToastType, isVisible: $showToast) : 
+                    Color.clear
             )
         }
         .ignoresSafeArea()
