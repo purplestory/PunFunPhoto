@@ -358,11 +358,7 @@ struct PhotoEditorView: View {
             }
 
             ZStack {
-                if UIDevice.current.userInterfaceIdiom == .pad {
-                    Color.white
-                } else {
-                    Color.clear
-                }
+                Color.clear // 모든 디바이스에서 배경색을 상위 뷰에서 처리
                 VStack {
                     Spacer()
                     mainCanvas(scaleFactor: scaleFactor)
@@ -628,7 +624,7 @@ struct PhotoEditorView: View {
                     activeContextMenu = nil
                 }
             }
-            .background(UIDevice.current.userInterfaceIdiom == .pad ? Color.white : Color.clear)
+            .background(Color.clear) // 모든 디바이스에서 배경색을 상위 뷰에서 처리
             .shadow(color: Color.black.opacity(0.1), radius: 6, x: 0, y: 3)
             .coordinateSpace(name: "CanvasSpace")
             .frame(width: geo.size.width, height: geo.size.height)
