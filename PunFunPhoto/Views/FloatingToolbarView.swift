@@ -46,6 +46,7 @@ struct FloatingToolbarView: View {
     @Binding var showTopLoader2ContextMenu: Bool?
     var onMenuChange: (() -> Void)? = nil
     var onClosePopupMenus: (() -> Void)? = nil
+    let scaleFactor: CGFloat // 스케일 팩터 추가 (아이폰 최적화)
 
     
     init(
@@ -62,7 +63,8 @@ struct FloatingToolbarView: View {
         showTopLoader1ContextMenu: Binding<Bool?>,
         showTopLoader2ContextMenu: Binding<Bool?>,
         onMenuChange: (() -> Void)? = nil,
-        onClosePopupMenus: (() -> Void)? = nil
+        onClosePopupMenus: (() -> Void)? = nil,
+        scaleFactor: CGFloat = 1.0
 
     ) {
         self._showSafeFrame = showSafeFrame
@@ -79,6 +81,7 @@ struct FloatingToolbarView: View {
         self._showTopLoader2ContextMenu = showTopLoader2ContextMenu
         self.onMenuChange = onMenuChange
         self.onClosePopupMenus = onClosePopupMenus
+        self.scaleFactor = scaleFactor
         print("[DEBUG] FloatingToolbarView init - onClosePopupMenus 콜백 저장됨: \(onClosePopupMenus != nil)")
     }
     
@@ -97,16 +100,38 @@ struct FloatingToolbarView: View {
     }
     
     /// 가이드에 따른 동적 레이아웃 계산
+    /// 아이폰과 아이패드 각각 최적화
     private var dynamicSpacing: CGFloat {
-        isMobile ? 24 : 20 // 아이폰만 24pt로 조정, 아이패드는 기존 20pt 유지
+        if isMobile {
+            return 24 // 아이폰: 적당한 간격 (아이폰용 브랜치에서 최적화)
+        } else {
+            return 40 // 아이패드: 넉넉한 간격 (아이패드용 최적화)
+        }
     }
     
     private var dynamicPadding: CGFloat {
-        isMobile ? 10 : 12 // 아이패드는 기존 12pt 유지
+        if isMobile {
+            return 10 // 아이폰: 컴팩트한 패딩
+        } else {
+            return 20 // 아이패드: 넉넉한 패딩
+        }
     }
     
     private var dynamicFontSize: CGFloat {
-        isMobile ? 15 : 16 // 아이패드는 기존 16pt 유지
+        if isMobile {
+            return 15 // 아이폰: 작은 폰트
+        } else {
+            return 16 // 아이패드: 큰 폰트
+        }
+    }
+    
+    /// 드롭다운 메뉴와 툴바 사이 간격 (디바이스별 최적화)
+    private var dropdownSpacing: CGFloat {
+        if isMobile {
+            return 46 // 아이폰: 적당한 간격
+        } else {
+            return 69 // 아이패드: 넉넉한 간격
+        }
     }
     
     // MARK: - View States
@@ -177,7 +202,7 @@ struct FloatingToolbarView: View {
             if let selected = selectedMenu {
                 VStack(spacing: 0) {
                     Spacer()
-                        .frame(height: isMobile ? 61 : 69) // 툴바 높이만큼 여백 + 25픽셀 추가
+                        .frame(height: dropdownSpacing) // 디바이스별 최적화된 드롭다운 간격
                     
                     // 정확한 메뉴 위치에 드롭다운 배치
                     HStack {
