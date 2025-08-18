@@ -373,20 +373,11 @@ struct FloatingToolbarView: View {
                     }
                     .overlay(
                         // 드롭다운 메뉴 오버레이
-                        Group {
-                            if let selected = selectedMenu {
-                                submenuOverlay(for: selected)
-                            }
-                        }
+                        selectedMenu != nil ? AnyView(submenuOverlay(for: selectedMenu!)) : AnyView(Color.clear)
                     )
                 }
             }
-            .overlay(
-                // 아이폰에서만 토스트 메시지를 화면 중앙에 표시
-                UIDevice.current.userInterfaceIdiom == .phone ? 
-                    CenterToastView(message: toastMessage, type: toastType.toCenterToastType, isVisible: $showToast) : 
-                    Color.clear
-            )
+
         }
         .ignoresSafeArea()
         .coordinateSpace(name: "CanvasSpace")
@@ -474,6 +465,11 @@ struct FloatingToolbarView: View {
                         topLoader2.loadFrom(savedTopLoader)
                         topLoader2.attach()
                     }
+                }
+                
+                // 아이폰에서만 토스트 메시지를 화면 중앙에 표시
+                if UIDevice.current.userInterfaceIdiom == .phone {
+                    CenterToastView(message: toastMessage, type: toastType.toCenterToastType, isVisible: $showToast)
                 }
             }
         }
