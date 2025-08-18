@@ -360,7 +360,8 @@ struct PhotoEditorView: View {
                     Spacer()
                     mainCanvas(scaleFactor: scaleFactor)
                         .padding(.horizontal, 20) // 좌우 여백 추가
-                        .padding(.vertical, 20)   // 상하 여백 추가
+                        .padding(.top, 30)        // 상단 여백 30픽셀 (기존 20 + 10)
+                        .padding(.bottom, 20)     // 하단 여백 20픽셀
                     Spacer()
                 }
                 .frame(maxWidth: .infinity)
@@ -551,7 +552,8 @@ struct PhotoEditorView: View {
                         showTopLoader2ContextMenu = nil
                         showObjectMenu = false
                         activeContextMenu = nil  // 활성 컨텍스트 메뉴 상태도 초기화
-                    }
+                    },
+                    scaleFactor: scaleFactor
                 )
             }
             .background(

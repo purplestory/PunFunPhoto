@@ -46,6 +46,7 @@ struct FloatingToolbarView: View {
     @Binding var showTopLoader2ContextMenu: Bool?
     var onMenuChange: (() -> Void)? = nil
     var onClosePopupMenus: (() -> Void)? = nil
+    let scaleFactor: CGFloat // 스케일 팩터 추가
 
     
     init(
@@ -62,7 +63,8 @@ struct FloatingToolbarView: View {
         showTopLoader1ContextMenu: Binding<Bool?>,
         showTopLoader2ContextMenu: Binding<Bool?>,
         onMenuChange: (() -> Void)? = nil,
-        onClosePopupMenus: (() -> Void)? = nil
+        onClosePopupMenus: (() -> Void)? = nil,
+        scaleFactor: CGFloat = 1.0
 
     ) {
         self._showSafeFrame = showSafeFrame
@@ -79,6 +81,7 @@ struct FloatingToolbarView: View {
         self._showTopLoader2ContextMenu = showTopLoader2ContextMenu
         self.onMenuChange = onMenuChange
         self.onClosePopupMenus = onClosePopupMenus
+        self.scaleFactor = scaleFactor
         print("[DEBUG] FloatingToolbarView init - onClosePopupMenus 콜백 저장됨: \(onClosePopupMenus != nil)")
     }
     
@@ -98,15 +101,25 @@ struct FloatingToolbarView: View {
     
     /// 가이드에 따른 동적 레이아웃 계산
     private var dynamicSpacing: CGFloat {
-        isMobile ? 16 : 20
+        isMobile ? 16 : (isTablet ? 30 : 20) // 아이패드에서 간격 확대
     }
     
     private var dynamicPadding: CGFloat {
-        isMobile ? 10 : 12
+        isMobile ? 10 : (isTablet ? 16 : 12) // 아이패드에서 패딩 확대
     }
     
     private var dynamicFontSize: CGFloat {
         isMobile ? 15 : 16
+    }
+    
+    /// 아이패드 전용 상단 여백 계산
+    private var topPaddingForDevice: CGFloat {
+        // 아이패드만 정확히 감지 (UIDevice로 확인)
+        if UIDevice.current.userInterfaceIdiom == .pad {
+            return getSafeAreaInsets().top + 20 // 아이패드에서만 추가 여백
+        } else {
+            return getSafeAreaInsets().top // 아이폰은 기존 유지
+        }
     }
     
     // MARK: - View States
@@ -148,7 +161,7 @@ struct FloatingToolbarView: View {
             .background(
                 GeometryReader { geo in
                     Color.clear
-                        .preference(key: ViewPreferenceKeys.ToolbarFrameKey.self, value: geo.frame(in: .global))
+                        .preference(key: ViewPreferenceKeys.ToolbarFrameKey.self, value: geo.frame(in: .named("CanvasSpace")))
                 }
             )
             .background(
@@ -166,7 +179,7 @@ struct FloatingToolbarView: View {
             Spacer()
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-        .padding(.top, getSafeAreaInsets().top)
+        .padding(.top, topPaddingForDevice) // 아이패드 전용 상단 여백 적용
         .overlay(submenuOverlay)
     }
     
@@ -177,16 +190,25 @@ struct FloatingToolbarView: View {
             if let selected = selectedMenu {
                 VStack(spacing: 0) {
                     Spacer()
-                        .frame(height: isMobile ? 36 : 44) // 툴바 높이만큼 여백
+                        .frame(height: isMobile ? 36 : (UIDevice.current.userInterfaceIdiom == .pad ? 49 : 44)) // 아이패드에서 5픽셀 추가 간격 (기존 44 + 5)
                     
                     // 정확한 메뉴 위치에 드롭다운 배치
                     HStack {
+                        let exactOffset = getExactMenuOffset(for: selected)
+                        
                         Spacer()
-                            .frame(width: getExactMenuOffset(for: selected))
+                            .frame(width: exactOffset)
+                            .onAppear {
+                                print("[DEBUG] 🎯 드롭다운 메뉴 배치 - \(selected):")
+                                print("  - 계산된 오프셋: \(exactOffset)")
+                                print("  - Spacer 폭: \(exactOffset)")
+                            }
                         
                         menuOverlay(for: selected)
                             .fixedSize(horizontal: true, vertical: false)
                             .zIndex(100)
+                            .offset(x: -12) // 드롭다운 메뉴 패딩 12픽셀 제외
+                            .offset(y: UIDevice.current.userInterfaceIdiom == .pad ? 40 : 0) // 아이패드에서 40픽셀 아래로 이동 (툴바 하단 + 적절한 간격)
                             .transition(.asymmetric(
                                 insertion: .scale(scale: 0.8).combined(with: .opacity),
                                 removal: .scale(scale: 0.8).combined(with: .opacity)
@@ -338,11 +360,11 @@ struct FloatingToolbarView: View {
             .background(
                 GeometryReader { geo in
                     Color.clear
-                        .preference(key: MenuPositionKey.self, value: [MenuPosition(type: menuType, frame: geo.frame(in: .global), textFrame: geo.frame(in: .global))])
+                        .preference(key: MenuPositionKey.self, value: [MenuPosition(type: menuType, frame: geo.frame(in: .named("CanvasSpace")), textFrame: geo.frame(in: .named("CanvasSpace")))])
                         .onAppear {
-                            print("[DEBUG] 📍 메뉴 위치 정보 수집 - \(menuType): \(geo.frame(in: .global))")
+                            print("[DEBUG] 📍 메뉴 위치 정보 수집 - \(menuType): \(geo.frame(in: .named("CanvasSpace")))")
                         }
-                        .onChange(of: geo.frame(in: .global)) { newFrame in
+                        .onChange(of: geo.frame(in: .named("CanvasSpace"))) { newFrame in
                             print("[DEBUG] 📍 메뉴 위치 변경 - \(menuType): \(newFrame)")
                         }
                         .id("menu-\(menuType.rawValue)") // 고유 ID로 정확한 위치 추적
@@ -402,40 +424,48 @@ struct FloatingToolbarView: View {
         )
     }
     
-    /// 정확한 메뉴 위치 계산 (실제 버튼 위치 기반)
+    /// 정확한 메뉴 위치 계산 (기본 방식)
     /// - Parameter menuType: 정렬할 메뉴 타입
     /// - Returns: 정확한 오프셋 값
     private func getExactMenuOffset(for menuType: MenuType) -> CGFloat {
-        // 실제 메뉴 위치 정보 사용
+        // 실제 메뉴 위치 정보 사용 (모든 보정값 제거)
         guard let menuPosition = menuPositions.first(where: { $0.type == menuType }) else {
             print("[DEBUG] ⚠️ 메뉴 위치 정보를 찾을 수 없음: \(menuType)")
             return 0
         }
         
-        // 실제 메뉴 버튼의 왼쪽 위치 계산
-        let menuLeftX = menuPosition.frame.minX
+        // 실제 메뉴 버튼의 내용 시작점 계산 (패딩 제외)
+        let menuLeftX = menuPosition.frame.minX + 10 // 툴바 버튼 패딩 10픽셀 제외
         let toolbarLeftX = toolbarFrame.minX
         
-        // 드롭다운 메뉴를 해당 메뉴 버튼의 왼쪽에 정확히 정렬
+        // 드롭다운 메뉴를 해당 메뉴 버튼의 내용 시작점에 정렬
         var offset = menuLeftX - toolbarLeftX
         
-        // 아이콘 폭 차이 보정 (보기 메뉴 제외)
-        if menuType != .view {
-            offset -= 5 // 5픽셀 왼쪽으로 이동
-            
-            // 프로젝트와 내보내기는 추가로 5픽셀 더 왼쪽으로
-            if menuType == .project || menuType == .export {
-                offset -= 5 // 추가 5픽셀 왼쪽으로 이동
+        // 아이패드 전용 미세 조정 (스케일 팩터 고려)
+        if UIDevice.current.userInterfaceIdiom == .pad {
+            // 스케일 팩터로 나누어 실제 픽셀 단위로 보정
+            let scaleAdjustedOffset: CGFloat
+            switch menuType {
+            case .project:
+                scaleAdjustedOffset = 3 / scaleFactor // 프로젝트: +3픽셀
+            case .photocard:
+                scaleAdjustedOffset = 8 / scaleFactor // 포토카드: +8픽셀
+            case .toploader:
+                scaleAdjustedOffset = 3 / scaleFactor // 탑로더: +3픽셀
+            case .view:
+                scaleAdjustedOffset = 13 / scaleFactor // 보기: +13픽셀
+            case .export:
+                scaleAdjustedOffset = 3 / scaleFactor // 내보내기: +3픽셀
             }
+            offset += scaleAdjustedOffset
         }
         
-        print("[DEBUG] 📍 정확한 메뉴 위치 계산 - \(menuType):")
+        print("[DEBUG] 📍 스케일 팩터 고려한 메뉴 위치 계산 - \(menuType):")
         print("  - 메뉴 왼쪽 X: \(menuLeftX)")
         print("  - 툴바 왼쪽 X: \(toolbarLeftX)")
-        print("  - 기본 오프셋: \(menuLeftX - toolbarLeftX)")
-        print("  - 아이콘 보정: \(menuType != .view ? "-5" : "0")")
-        print("  - 추가 보정: \((menuType == .project || menuType == .export) ? "-5" : "0")")
-        print("  - 최종 오프셋: \(offset)")
+        print("  - 기본 오프셋: \(offset)")
+        print("  - 스케일 팩터: \(scaleFactor)")
+        print("  - 스케일 보정된 오프셋: \(UIDevice.current.userInterfaceIdiom == .pad ? "적용됨" : "적용안됨")")
         
         return offset
     }
