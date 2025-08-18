@@ -24,6 +24,8 @@ struct PhotoEditorView: View {
     @State private var menuWidth: CGFloat = 0
     @State private var menuHeight: CGFloat = 0
     @State private var boxFrames: [Int: CGRect] = [:]
+    @State private var photoBox1Frame: CGRect = .zero
+    @State private var photoBox2Frame: CGRect = .zero
     @State private var rootOrigin: CGPoint = .zero
     @State private var selectedBoxIndex: Int? = nil
     @State private var photoPickerMode: PhotoPickerMode = .전체
@@ -280,6 +282,9 @@ struct PhotoEditorView: View {
             }
             .onPreferenceChange(ViewPreferenceKeys.PhotoBoxFrameKey.self) { frames in
                 self.boxFrames = frames
+                // 포토박스 프레임 업데이트
+                self.photoBox1Frame = frames[1] ?? .zero
+                self.photoBox2Frame = frames[2] ?? .zero
             }
 
             Text(currentProjectName)
@@ -354,12 +359,12 @@ struct PhotoEditorView: View {
                 VStack {
                     Spacer()
                     mainCanvas(scaleFactor: scaleFactor)
+                        .padding(.horizontal, 20) // 좌우 여백 추가
+                        .padding(.vertical, 20)   // 상하 여백 추가
                     Spacer()
                 }
                 .frame(maxWidth: .infinity)
                 .zIndex(0)
-                
-                // 배경 터치 완전 제거 - 메뉴 전환만 작동하도록
                 
 
 
@@ -678,6 +683,23 @@ struct PhotoEditorView: View {
                 }
             }
         }
+        
+        // 배경 터치 처리 - 포토박스 영역 제외하고 빈 공간만
+        Color.clear
+            .contentShape(Rectangle())
+            .onTapGesture { location in
+                // 포토박스 영역인지 확인
+                let isPhotoBox1Touched = boxFrames[1]?.contains(location) == true
+                let isPhotoBox2Touched = boxFrames[2]?.contains(location) == true
+                
+                if !isPhotoBox1Touched && !isPhotoBox2Touched {
+                    print("[DEBUG] PhotoEditorView - 실제 빈 공간 터치 - 모든 메뉴 닫기")
+                    closeAllMenus()
+                } else {
+                    print("[DEBUG] PhotoEditorView - 포토박스 영역 터치 - 배경 터치 무시")
+                }
+            }
+            .zIndex(-1) // 모든 요소보다 낮은 우선순위
     }
     
     private func swapPhotos() {

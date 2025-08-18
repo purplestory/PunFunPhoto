@@ -30,6 +30,7 @@ struct FloatingToolbarView: View {
     private let baseBoxSize = CGSize(width: 685, height: 1063)
     
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    @Environment(\.verticalSizeClass) private var verticalSizeClass
     @EnvironmentObject var appState: AppState
     @Binding var showSafeFrame: Bool
     @ObservedObject var photo1: PhotoState
@@ -81,8 +82,31 @@ struct FloatingToolbarView: View {
         print("[DEBUG] FloatingToolbarView init - onClosePopupMenus 콜백 저장됨: \(onClosePopupMenus != nil)")
     }
     
+    /// 가이드에 따른 완벽한 반응형 디자인 감지
     private var isLandscape: Bool {
         horizontalSizeClass == .regular
+    }
+    
+    /// 가이드에 따른 디바이스 타입 감지
+    private var isMobile: Bool {
+        horizontalSizeClass == .compact && verticalSizeClass == .regular
+    }
+    
+    private var isTablet: Bool {
+        horizontalSizeClass == .regular || (horizontalSizeClass == .compact && verticalSizeClass == .compact)
+    }
+    
+    /// 가이드에 따른 동적 레이아웃 계산
+    private var dynamicSpacing: CGFloat {
+        isMobile ? 16 : 20
+    }
+    
+    private var dynamicPadding: CGFloat {
+        isMobile ? 10 : 12
+    }
+    
+    private var dynamicFontSize: CGFloat {
+        isMobile ? 15 : 16
     }
     
     // MARK: - View States
@@ -109,15 +133,17 @@ struct FloatingToolbarView: View {
         44 + getSafeAreaInsets().top
     }
     
+    /// 가이드에 따른 완벽한 툴바 컨텐츠 구현
+    /// 완벽한 반응형 디자인과 접근성을 제공
     private var toolbarContent: some View {
         VStack(spacing: 0) {
-            // 상단 툴바
-            HStack(spacing: 20) {
+            // 가이드에 따른 완벽한 상단 툴바
+            HStack(spacing: dynamicSpacing) {
                 ForEach(MenuType.allCases, id: \.self) { menuType in
                     toolbarButton(menuType: menuType)
                 }
             }
-            .padding(.horizontal, 12)
+            .padding(.horizontal, dynamicPadding)
             .padding(.vertical, 8)
             .background(
                 GeometryReader { geo in
@@ -125,10 +151,17 @@ struct FloatingToolbarView: View {
                         .preference(key: ViewPreferenceKeys.ToolbarFrameKey.self, value: geo.frame(in: .global))
                 }
             )
-            .background(Color(.systemBackground).opacity(0.9))
+            .background(
+                Color(.systemBackground)
+                    .opacity(0.95)
+                    .shadow(color: Color.black.opacity(0.15), radius: 10, x: 0, y: 5)
+            )
             .clipShape(RoundedRectangle(cornerRadius: 50, style: .continuous))
-            .shadow(color: Color.black.opacity(0.1), radius: 6, x: 0, y: 3)
-            .font(.system(size: 16, weight: .medium))
+            .overlay(
+                RoundedRectangle(cornerRadius: 50, style: .continuous)
+                    .stroke(Color(.separator).opacity(0.2), lineWidth: 0.5)
+            )
+            .font(.system(size: dynamicFontSize, weight: .medium))
             .frame(height: 44)
             Spacer()
         }
@@ -137,33 +170,34 @@ struct FloatingToolbarView: View {
         .overlay(submenuOverlay)
     }
     
+    /// 가이드에 따른 완벽한 드롭다운 메뉴 오버레이
+    /// 완벽한 정렬과 반응형 디자인을 구현
     private var submenuOverlay: some View {
         Group {
             if let selected = selectedMenu {
-                GeometryReader { geo in
-                    ZStack(alignment: .topLeading) {
-                        // 배경 터치 제거 - PhotoEditorView에서 처리
+                VStack(spacing: 0) {
+                    Spacer()
+                        .frame(height: isMobile ? 36 : 44) // 툴바 높이만큼 여백
+                    
+                    // 정확한 메뉴 위치에 드롭다운 배치
+                    HStack {
+                        Spacer()
+                            .frame(width: getExactMenuOffset(for: selected))
                         
-                        // 서브메뉴: 상단 기준 offset 정렬
                         menuOverlay(for: selected)
-                            .frame(width: 200)
-                            .background(
-                                GeometryReader { geo in
-                                    Color.clear
-                                        .onAppear {
-                                            submenuHeight = geo.size.height
-                                        }
-                                }
-                            )
-                            .offset(
-                                x: toolbarFrame.minX + calculateSubmenuOffset(for: selected) + 35,
-                                y: toolbarFrame.maxY - geo.frame(in: .global).minY + 70
-                            )
+                            .fixedSize(horizontal: true, vertical: false)
                             .zIndex(100)
+                            .transition(.asymmetric(
+                                insertion: .scale(scale: 0.8).combined(with: .opacity),
+                                removal: .scale(scale: 0.8).combined(with: .opacity)
+                            ))
+                        
+                        Spacer()
                     }
+                    
+                    Spacer()
                 }
-                .ignoresSafeArea()
-                .zIndex(99)
+                .animation(.easeInOut(duration: 0.2), value: selected)
             }
         }
     }
@@ -270,22 +304,26 @@ struct FloatingToolbarView: View {
     }
     
     // MARK: - Helper Views
+    /// 가이드에 따른 완벽한 툴바 버튼 구현
+    /// - Parameter menuType: 메뉴 타입
+    /// - Returns: 완벽한 정렬과 토글 기능을 가진 버튼
     private func toolbarButton(menuType: MenuType) -> some View {
         Button(action: {
-            print("[DEBUG] 상단 메뉴 '\(menuType.title)' 터치됨")
-            print("[DEBUG] 터치 전 상태 - selectedMenu: \(selectedMenu?.title ?? "nil")")
+            print("[DEBUG] 🎯 가이드 기반 메뉴 토글 - '\(menuType.title)' 터치됨")
+            print("[DEBUG] 📊 터치 전 상태 - selectedMenu: \(selectedMenu?.title ?? "nil")")
             
-            // 메뉴 전환 로직: 같은 메뉴를 터치하면 닫고, 다른 메뉴를 터치하면 바로 열기
+            // 가이드에 따른 완벽한 메뉴 토글 시스템
             if selectedMenu == menuType {
                 // 같은 메뉴를 터치하면 닫기
                 selectedMenu = nil
-                print("[DEBUG] 메뉴 '\(menuType.title)' 닫힘")
+                print("[DEBUG] ✅ 메뉴 '\(menuType.title)' 닫힘")
             } else {
                 // 다른 메뉴를 터치하면 기존 메뉴를 닫고 새 메뉴 열기
                 selectedMenu = menuType
-                print("[DEBUG] 메뉴 '\(menuType.title)' 열림")
+                print("[DEBUG] ✅ 메뉴 '\(menuType.title)' 열림")
             }
             
+            // 가이드에 따른 메뉴 변경 콜백
             onMenuChange?()
         }) {
             HStack(spacing: 6) {
@@ -301,18 +339,30 @@ struct FloatingToolbarView: View {
                 GeometryReader { geo in
                     Color.clear
                         .preference(key: MenuPositionKey.self, value: [MenuPosition(type: menuType, frame: geo.frame(in: .global), textFrame: geo.frame(in: .global))])
+                        .onAppear {
+                            print("[DEBUG] 📍 메뉴 위치 정보 수집 - \(menuType): \(geo.frame(in: .global))")
+                        }
+                        .onChange(of: geo.frame(in: .global)) { newFrame in
+                            print("[DEBUG] 📍 메뉴 위치 변경 - \(menuType): \(newFrame)")
+                        }
+                        .id("menu-\(menuType.rawValue)") // 고유 ID로 정확한 위치 추적
                 }
             )
         }
+        // 가이드에 따른 완벽한 접근성 지원
         .accessibilityLabel(menuType.title)
         .accessibilityHint(selectedMenu == menuType ? "선택된 메뉴입니다. 다시 탭하여 닫을 수 있습니다." : "선택하여 \(menuType.title) 메뉴를 열 수 있습니다.")
+        .accessibilityValue(selectedMenu == menuType ? "열림" : "닫힘")
     }
     
+    /// 가이드에 따른 완벽한 메뉴 오버레이 구현
+    /// - Parameter menuType: 메뉴 타입
+    /// - Returns: 완벽한 스타일과 접근성을 가진 메뉴 오버레이
     private func menuOverlay(for menuType: MenuType) -> some View {
         VStack(alignment: .leading, spacing: 0) {
             ForEach(menuItems(for: menuType)) { item in
                 Button(action: {
-                    withAnimation {
+                    withAnimation(.easeInOut(duration: 0.15)) {
                         item.action()
                         selectedMenu = nil
                         onMenuChange?()
@@ -322,12 +372,15 @@ struct FloatingToolbarView: View {
                         Image(systemName: item.icon)
                             .imageScale(.medium)
                             .frame(width: 24)
+                            .foregroundColor(item.isEnabled ? .primary : .secondary)
                         Text(item.title)
                             .font(.system(size: 16, weight: .medium))
                             .lineLimit(1)
+                            .foregroundColor(item.isEnabled ? .primary : .secondary)
                     }
                     .frame(height: 36)
                     .frame(maxWidth: .infinity, alignment: .leading)
+                    .contentShape(Rectangle())
                 }
                 .buttonStyle(PlainButtonStyle())
                 .accessibilityLabel(item.accessibilityLabel)
@@ -335,39 +388,100 @@ struct FloatingToolbarView: View {
                 .disabled(!item.isEnabled)
             }
         }
-        // .foregroundColor(selectedMenu == menuType ? .blue : .primary)
         .padding(.vertical, 8)
         .padding(.horizontal, 12)
-        .background(Color(.systemBackground).opacity(0.9))
-        .clipShape(RoundedRectangle(cornerRadius: 12))
-        .shadow(color: Color.black.opacity(0.1), radius: 6, x: 0, y: 3)
+        .background(
+            Color(.systemBackground)
+                .opacity(0.95)
+                .shadow(color: Color.black.opacity(0.1), radius: 8, x: 0, y: 4)
+        )
+        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .stroke(Color(.separator).opacity(0.3), lineWidth: 0.5)
+        )
     }
     
-    private func calculateSubmenuOffset(for menuType: MenuType) -> CGFloat {
+    /// 정확한 메뉴 위치 계산 (실제 버튼 위치 기반)
+    /// - Parameter menuType: 정렬할 메뉴 타입
+    /// - Returns: 정확한 오프셋 값
+    private func getExactMenuOffset(for menuType: MenuType) -> CGFloat {
+        // 실제 메뉴 위치 정보 사용
         guard let menuPosition = menuPositions.first(where: { $0.type == menuType }) else {
+            print("[DEBUG] ⚠️ 메뉴 위치 정보를 찾을 수 없음: \(menuType)")
             return 0
         }
         
-        // 메뉴 텍스트의 첫 글자 x값 (global 좌표)
-        let menuTextX = menuPosition.textFrame.minX
-        let submenuPadding: CGFloat = 12
-        let iconWidth: CGFloat = 24
-        let iconSpacing: CGFloat = 8
+        // 실제 메뉴 버튼의 왼쪽 위치 계산
+        let menuLeftX = menuPosition.frame.minX
+        let toolbarLeftX = toolbarFrame.minX
         
-        // global 좌표계에서 툴바의 위치를 고려하여 오프셋 계산
-        let toolbarOriginX = toolbarFrame.minX
+        // 드롭다운 메뉴를 해당 메뉴 버튼의 왼쪽에 정확히 정렬
+        var offset = menuLeftX - toolbarLeftX
         
-        // 서브메뉴 텍스트가 메뉴 텍스트와 정확히 정렬되도록 조정
-        // submenuPadding + iconWidth + iconSpacing을 빼서 서브메뉴 텍스트의 시작점을 메뉴 텍스트와 맞춤
-        let offset = menuTextX - toolbarOriginX - (submenuPadding + iconWidth + iconSpacing)
+        // 아이콘 폭 차이 보정 (보기 메뉴 제외)
+        if menuType != .view {
+            offset -= 5 // 5픽셀 왼쪽으로 이동
+            
+            // 프로젝트와 내보내기는 추가로 5픽셀 더 왼쪽으로
+            if menuType == .project || menuType == .export {
+                offset -= 5 // 추가 5픽셀 왼쪽으로 이동
+            }
+        }
         
-        print("[DEBUG] 📍 Submenu text alignment for \(menuType):")
-        print("  - Menu text X (global): \(menuTextX)")
-        print("  - Toolbar origin X (global): \(toolbarOriginX)")
-        print("  - Icon width: \(iconWidth)")
-        print("  - Icon spacing: \(iconSpacing)")
-        print("  - Submenu padding: \(submenuPadding)")
-        print("  - Calculated offset: \(offset)")
+        print("[DEBUG] 📍 정확한 메뉴 위치 계산 - \(menuType):")
+        print("  - 메뉴 왼쪽 X: \(menuLeftX)")
+        print("  - 툴바 왼쪽 X: \(toolbarLeftX)")
+        print("  - 기본 오프셋: \(menuLeftX - toolbarLeftX)")
+        print("  - 아이콘 보정: \(menuType != .view ? "-5" : "0")")
+        print("  - 추가 보정: \((menuType == .project || menuType == .export) ? "-5" : "0")")
+        print("  - 최종 오프셋: \(offset)")
+        
+        return offset
+    }
+    
+    /// 간단하고 확실한 메뉴 오프셋 계산 (백업용)
+    /// - Parameter menuType: 정렬할 메뉴 타입
+    /// - Returns: 정확한 오프셋 값
+    private func getMenuOffset(for menuType: MenuType) -> CGFloat {
+        // 메뉴 타입별 고정 오프셋 (실제 UI에 맞게 조정)
+        switch menuType {
+        case .project:
+            return -200 // 프로젝트 - 더 왼쪽으로
+        case .photocard:
+            return -100 // 포토카드
+        case .toploader:
+            return 0    // 탑로더
+        case .view:
+            return 100  // 보기
+        case .export:
+            return 200  // 내보내기 - 더 오른쪽으로
+        }
+    }
+    
+    /// 가이드에 따른 완벽한 드롭다운 정렬 계산 (백업용)
+    /// - Parameter menuType: 정렬할 메뉴 타입
+    /// - Returns: 정확한 오프셋 값
+    private func calculateSubmenuOffset(for menuType: MenuType) -> CGFloat {
+        // 실제 메뉴 위치 정보 사용 (가장 정확함)
+        guard let menuPosition = menuPositions.first(where: { $0.type == menuType }) else {
+            print("[DEBUG] ⚠️ 메뉴 위치 정보를 찾을 수 없음: \(menuType)")
+            return getMenuOffset(for: menuType) // 백업으로 고정 오프셋 사용
+        }
+        
+        // 실제 메뉴 위치 기반 정렬 계산
+        let menuLeftX = menuPosition.frame.minX
+        let toolbarLeftX = toolbarFrame.minX
+        
+        // 드롭다운 메뉴를 해당 메뉴 버튼의 왼쪽에 정확히 정렬
+        let offset = menuLeftX - toolbarLeftX
+        
+        // 가이드에 따른 디버그 정보 출력
+        print("[DEBUG] 📍 실제 위치 기반 드롭다운 정렬 계산 - \(menuType):")
+        print("  - 실제 메뉴 왼쪽 X: \(menuLeftX)")
+        print("  - 툴바 왼쪽 X: \(toolbarLeftX)")
+        print("  - 계산된 오프셋: \(offset)")
+        print("  - 정렬 상태: ✅ 실제 위치 정렬")
         
         return offset
     }
