@@ -1337,6 +1337,20 @@ struct FloatingToolbarView: View {
         canvasArea
     }
     
+    /// 실제 편집 가능한 캔버스는 `PhotoEditorView`가 렌더링하며,
+    /// 이 뷰는 메뉴 영역 외에는 아무 것도 그리지 않도록 비워둡니다.
+    private var canvasArea: some View {
+        GeometryReader { geometry in
+            Color.clear
+                .allowsHitTesting(false) // 아래 편집 캔버스의 터치를 가로막지 않음
+                .frame(
+                    width: geometry.size.width,
+                    height: geometry.size.height
+                )
+                .offset(x: isMenuOpen ? menuWidth : 0) // 메뉴가 열려있을 때 오른쪽으로 이동
+        }
+    }
+    
     /// 앱 아이콘(또는 자산의 로고)을 UIImage로 가져오기
     private func appIconUIImage() -> UIImage? {
         // 1순위: 투명 배경 로고를 우선 사용
