@@ -373,7 +373,7 @@ struct FloatingToolbarView: View {
                     }
                     .overlay(
                         // 드롭다운 메뉴 오버레이
-                        selectedMenu != nil ? AnyView(submenuOverlay(for: selectedMenu!)) : AnyView(Color.clear)
+                        selectedMenu != nil ? AnyView(submenuOverlay) : AnyView(Color.clear)
                     )
                 }
             }
