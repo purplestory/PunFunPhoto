@@ -64,6 +64,7 @@ struct FloatingToolbarView: View {
         showTopLoader2ContextMenu: Binding<Bool?>,
         onMenuChange: (() -> Void)? = nil,
         onClosePopupMenus: (() -> Void)? = nil,
+        onMenuStateChange: ((Bool) -> Void)? = nil,
         scaleFactor: CGFloat = 1.0
 
     ) {
@@ -81,6 +82,7 @@ struct FloatingToolbarView: View {
         self._showTopLoader2ContextMenu = showTopLoader2ContextMenu
         self.onMenuChange = onMenuChange
         self.onClosePopupMenus = onClosePopupMenus
+        self.onMenuStateChange = onMenuStateChange
         self.scaleFactor = scaleFactor
         print("[DEBUG] FloatingToolbarView init - onClosePopupMenus 콜백 저장됨: \(onClosePopupMenus != nil)")
     }
@@ -98,6 +100,22 @@ struct FloatingToolbarView: View {
     private var isTablet: Bool {
         horizontalSizeClass == .regular || (horizontalSizeClass == .compact && verticalSizeClass == .compact)
     }
+    
+    /// 명시적 디바이스 타입 체크 (아이폰 여부)
+    private var isPhone: Bool {
+        UIDevice.current.userInterfaceIdiom == .phone
+    }
+    
+    /// 메뉴 폭 (화면의 1/5) - 아이폰용 아코디언 메뉴
+    private var menuWidth: CGFloat {
+        max(220, UIScreen.main.bounds.width / 5) // 최소 사용성 보장
+    }
+    
+    /// 아이폰용 메뉴 상태 - 아코디언 메뉴 열림/닫힘
+    @State private var isMenuOpen: Bool = UIDevice.current.userInterfaceIdiom == .phone ? false : true
+    
+    // 메뉴 상태를 외부에 알리는 콜백 (아이폰용)
+    var onMenuStateChange: ((Bool) -> Void)? = nil
     
     /// 가이드에 따른 동적 레이아웃 계산
     /// 아이폰과 아이패드 각각 최적화
@@ -299,13 +317,78 @@ struct FloatingToolbarView: View {
     
     var body: some View {
         GeometryReader { geometry in
-            ZStack(alignment: .top) {
-                Color.clear
-                    .overlay {
-                        toolbarContent
+            ZStack(alignment: .topLeading) {
+                if UIDevice.current.userInterfaceIdiom == .phone {
+                    // 아이폰: 아코디언 메뉴 구조
+                    phoneToolbarContent
+                    
+                    // 아이폰용 앱 아이콘 (메뉴가 닫혀있을 때만 표시)
+                    if !isMenuOpen {
+                        if let icon = appIconUIImage() {
+                            Image(uiImage: icon)
+                                .resizable()
+                                .renderingMode(.original)
+                                .scaledToFit()
+                                .frame(width: 72, height: 72)
+                                .background(Color.clear)
+                                .allowsHitTesting(true)
+                                .drawingGroup()
+                                .compositingGroup()
+                                .blendMode(.normal)
+                                .onTapGesture {
+                                    withAnimation(.easeInOut(duration: 0.2)) {
+                                        isMenuOpen = true
+                                        onMenuStateChange?(true)
+                                    }
+                                }
+                                .padding(.leading, 12)
+                                .padding(.top, getSafeAreaInsets().top + 8)
+                        } else {
+                            Button(action: {
+                                withAnimation(.easeInOut(duration: 0.2)) {
+                                    isMenuOpen = true
+                                    onMenuStateChange?(true)
+                                }
+                            }) {
+                                Text("펀펀포토")
+                                    .font(.system(size: 14, weight: .semibold))
+                                    .foregroundColor(.primary)
+                                    .padding(.horizontal, 12)
+                                    .padding(.vertical, 8)
+                                    .background(Color(.systemGray6))
+                                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                            }
+                            .buttonStyle(PlainButtonStyle())
+                            .padding(.leading, 12)
+                            .padding(.top, getSafeAreaInsets().top + 8)
+                        }
                     }
-                CenterToastView(message: toastMessage, type: toastType.toCenterToastType, isVisible: $showToast)
+                } else {
+                    // 아이패드: 기존 드롭다운 툴바 구조
+                    ZStack(alignment: .top) {
+                        Color.clear
+                            .overlay {
+                                toolbarContent
+                            }
+                    }
+                    .overlay(
+                        // 드롭다운 메뉴 오버레이
+                        Group {
+                            if let selected = selectedMenu {
+                                submenuOverlay(for: selected)
+                            }
+                        }
+                    )
+                }
             }
+            .overlay(
+                // 아이폰에서만 토스트 메시지를 화면 중앙에 표시
+                Group {
+                    if UIDevice.current.userInterfaceIdiom == .phone {
+                        CenterToastView(message: toastMessage, type: toastType.toCenterToastType, isVisible: $showToast)
+                    }
+                }
+            )
         }
         .ignoresSafeArea()
         .coordinateSpace(name: "CanvasSpace")
@@ -1096,6 +1179,185 @@ struct FloatingToolbarView: View {
     private func openSubMenu(_ menuType: MenuType) {
         selectedMenu = menuType
         onMenuChange?()
+    }
+    
+    // MARK: - iPhone Accordion Menu Content
+    /// 아이폰용 아코디언 메뉴 컨텐츠
+    private var phoneToolbarContent: some View {
+        HStack(spacing: 0) {
+            if isMenuOpen {
+                phoneMenuPanel
+            }
+            phoneCanvasArea
+        }
+        .background(
+            GeometryReader { geo in
+                Color.clear
+                    .preference(key: ViewPreferenceKeys.ToolbarFrameKey.self, value: geo.frame(in: .named("CanvasSpace")))
+            }
+        )
+    }
+    
+    /// 아이폰용 왼쪽 메뉴 패널 (화면의 1/5 폭)
+    private var phoneMenuPanel: some View {
+        VStack(spacing: 0) {
+            phoneMenuHeader
+            Divider()
+            phoneMenuList
+        }
+        .frame(width: menuWidth)
+        .background(Color(.systemBackground))
+    }
+    
+    /// 아이폰용 메뉴 헤더
+    private var phoneMenuHeader: some View {
+        HStack {
+            Text("펀펀포토")
+                .font(.system(size: 18, weight: .semibold))
+                .foregroundColor(.primary)
+            Spacer()
+            Button(action: {
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    selectedMenu = nil
+                    isMenuOpen = false
+                    onClosePopupMenus?()
+                    onMenuStateChange?(false)
+                }
+            }) {
+                Image(systemName: "xmark")
+                    .font(.system(size: 16, weight: .medium))
+                    .foregroundColor(.secondary)
+                    .frame(width: 32, height: 32)
+                    .background(Color(.systemGray6))
+                    .clipShape(Circle())
+            }
+        }
+        .padding(.horizontal, 20)
+        .padding(.vertical, 16)
+        .background(Color(.systemBackground))
+    }
+    
+    /// 아이폰용 메뉴 목록
+    private var phoneMenuList: some View {
+        ScrollView {
+            VStack(spacing: 0) {
+                ForEach(MenuType.allCases, id: \.self) { menuType in
+                    phoneMenuItemView(for: menuType)
+                }
+            }
+            .padding(.vertical, 8)
+        }
+    }
+    
+    /// 아이폰용 개별 메뉴 아이템 뷰
+    private func phoneMenuItemView(for menuType: MenuType) -> some View {
+        VStack(spacing: 0) {
+            phoneMainMenuButton(for: menuType)
+            if selectedMenu == menuType {
+                phoneSubMenuItems(for: menuType)
+            }
+        }
+    }
+    
+    /// 아이폰용 메인 메뉴 버튼
+    private func phoneMainMenuButton(for menuType: MenuType) -> some View {
+        Button(action: {
+            withAnimation(.easeInOut(duration: 0.2)) {
+                if selectedMenu == menuType {
+                    selectedMenu = nil
+                } else {
+                    selectedMenu = menuType
+                }
+            }
+        }) {
+            HStack {
+                Image(systemName: menuType.icon)
+                    .font(.system(size: 18, weight: .medium))
+                    .foregroundColor(selectedMenu == menuType ? .blue : .primary)
+                    .frame(width: 24)
+                
+                Text(menuType.title)
+                    .font(.system(size: 16, weight: .medium))
+                    .foregroundColor(selectedMenu == menuType ? .blue : .primary)
+                
+                Spacer()
+                
+                // 화살표 아이콘 (펼쳐진/닫힌 상태 구분)
+                if selectedMenu == menuType {
+                    Text("∧")
+                        .font(.system(size: 16, weight: .medium))
+                        .foregroundColor(.blue)
+                } else {
+                    Text("∨")
+                        .font(.system(size: 16, weight: .medium))
+                        .foregroundColor(.secondary)
+                }
+            }
+            .padding(.horizontal, 20)
+            .padding(.vertical, 16)
+            .background(
+                selectedMenu == menuType ? Color.blue.opacity(0.08) : Color.clear
+            )
+        }
+        .buttonStyle(PlainButtonStyle())
+    }
+    
+    /// 아이폰용 하위 메뉴 아이템들
+    private func phoneSubMenuItems(for menuType: MenuType) -> some View {
+        VStack(spacing: 0) {
+            ForEach(menuItems(for: menuType)) { item in
+                Button(action: {
+                    withAnimation(.easeInOut(duration: 0.15)) {
+                        item.action()
+                        selectedMenu = nil
+                        onMenuChange?()
+                    }
+                }) {
+                    HStack(spacing: 12) {
+                        Image(systemName: item.icon)
+                            .font(.system(size: 16))
+                            .foregroundColor(item.isEnabled ? .primary : .secondary)
+                            .frame(width: 20)
+                        Text(item.title)
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundColor(item.isEnabled ? .primary : .secondary)
+                        Spacer()
+                    }
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 12)
+                    .padding(.leading, 20) // 들여쓰기
+                    .background(Color.blue.opacity(0.05))
+                }
+                .buttonStyle(PlainButtonStyle())
+                .disabled(!item.isEnabled)
+                
+                Divider()
+                    .padding(.leading, 52)
+                    .opacity(0.3)
+            }
+        }
+    }
+    
+    /// 아이폰용 캔버스 영역
+    private var phoneCanvasArea: some View {
+        canvasArea
+    }
+    
+    /// 앱 아이콘(또는 자산의 로고)을 UIImage로 가져오기
+    private func appIconUIImage() -> UIImage? {
+        // 1순위: 투명 배경 로고를 우선 사용
+        if let transparent = UIImage(named: "punfun_logo_transparent") { return transparent }
+        // 2순위: 기본 로고
+        if let logo = UIImage(named: "punfun_logo") { return logo }
+        // 실패 시 앱 아이콘 중 하나를 시도
+        if let iconsDict = Bundle.main.infoDictionary?["CFBundleIcons"] as? [String: Any],
+           let primaryDict = iconsDict["CFBundlePrimaryIcon"] as? [String: Any],
+           let files = primaryDict["CFBundleIconFiles"] as? [String],
+           let name = files.last,
+           let image = UIImage(named: name) {
+            return image
+        }
+        return nil
     }
 }
 
