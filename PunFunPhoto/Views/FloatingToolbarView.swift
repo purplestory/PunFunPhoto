@@ -407,90 +407,88 @@ struct FloatingToolbarView: View {
         let isSelected = selectedMenu == menuType
         let hasSubmenu = !menuItems(for: menuType).isEmpty
         
-        Group {
-            if UIDevice.current.userInterfaceIdiom == .phone {
-                // 아이폰: 세로 배치 (아이폰용 분기에서 가져온 최적화)
-                VStack(spacing: 4) {
-                    Image(systemName: menuType.icon)
-                        .font(.system(size: 16, weight: .medium))
-                        .foregroundColor(isSelected ? .white : .primary)
-                        .frame(width: 24, height: 24)
-                    
-                    Text(menuType.title)
-                        .font(.system(size: 12, weight: .medium))
-                        .foregroundColor(isSelected ? .white : .primary)
-                        .lineLimit(1)
-                }
-                .frame(width: 60, height: 50)
-                .background(
-                    RoundedRectangle(cornerRadius: 8, style: .continuous)
-                        .fill(isSelected ? Color.blue : Color(.systemGray6))
-                )
-                .overlay(
-                    RoundedRectangle(cornerRadius: 8, style: .continuous)
-                        .stroke(isSelected ? Color.blue : Color(.separator).opacity(0.3), lineWidth: 1)
-                )
-                .onTapGesture {
-                    withAnimation(.easeInOut(duration: 0.2)) {
-                        if isSelected {
-                            selectedMenu = nil
-                        } else {
-                            selectedMenu = menuType
-                        }
-                        onMenuChange?()
-                    }
-                }
-                .accessibilityLabel(menuType.title)
-                .accessibilityHint(hasSubmenu ? "하위 메뉴를 보려면 탭하세요" : "기능을 실행하려면 탭하세요")
-                .accessibilityValue(isSelected ? "선택됨" : "선택되지 않음")
-            } else {
-                // 아이패드: 가로 배치 (기존 최적화 유지)
-                Button(action: {
-                    print("[DEBUG] 🎯 가이드 기반 메뉴 토글 - '\(menuType.title)' 터치됨")
-                    print("[DEBUG] 📊 터치 전 상태 - selectedMenu: \(selectedMenu?.title ?? "nil")")
-                    
-                    // 가이드에 따른 완벽한 메뉴 토글 시스템
-                    if selectedMenu == menuType {
-                        // 같은 메뉴를 터치하면 닫기
-                        selectedMenu = nil
-                        print("[DEBUG] ✅ 메뉴 '\(menuType.title)' 닫힘")
-                    } else {
-                        // 다른 메뉴를 터치하면 기존 메뉴를 닫고 새 메뉴 열기
-                        selectedMenu = menuType
-                        print("[DEBUG] ✅ 메뉴 '\(menuType.title)' 열림")
-                    }
-                    
-                    // 가이드에 따른 메뉴 변경 콜백
-                    onMenuChange?()
-                }) {
-                    HStack(spacing: 6) {
-                        Image(systemName: menuType.icon)
-                            .font(.system(size: 16))
-                        Text(menuType.title)
-                            .font(.system(size: 16, weight: .medium))
-                    }
-                    .foregroundColor(.primary)
-                    .padding(.horizontal, 20)
-                    .contentShape(Rectangle())
-                    .background(
-                        GeometryReader { geo in
-                            Color.clear
-                                .preference(key: MenuPositionKey.self, value: [MenuPosition(type: menuType, frame: geo.frame(in: .global), textFrame: geo.frame(in: .global))])
-                                .onAppear {
-                                    print("[DEBUG] 📍 메뉴 위치 정보 수집 - \(menuType): \(geo.frame(in: .global))")
-                                }
-                                .onChange(of: geo.frame(in: .global)) { newFrame in
-                                    print("[DEBUG] 📍 메뉴 위치 변경 - \(menuType): \(newFrame)")
-                                }
-                                .id("menu-\(menuType.rawValue)") // 고유 ID로 정확한 위치 추적
-                        }
-                    )
-                }
-                // 가이드에 따른 완벽한 접근성 지원
-                .accessibilityLabel(menuType.title)
-                .accessibilityHint(selectedMenu == menuType ? "선택된 메뉴입니다. 다시 탭하여 닫을 수 있습니다." : "선택하여 \(menuType.title) 메뉴를 열 수 있습니다.")
-                .accessibilityValue(selectedMenu == menuType ? "열림" : "닫힘")
+        if UIDevice.current.userInterfaceIdiom == .phone {
+            // 아이폰: 세로 배치 (아이폰용 분기에서 가져온 최적화)
+            VStack(spacing: 4) {
+                Image(systemName: menuType.icon)
+                    .font(.system(size: 16, weight: .medium))
+                    .foregroundColor(isSelected ? .white : .primary)
+                    .frame(width: 24, height: 24)
+                
+                Text(menuType.title)
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundColor(isSelected ? .white : .primary)
+                    .lineLimit(1)
             }
+            .frame(width: 60, height: 50)
+            .background(
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .fill(isSelected ? Color.blue : Color(.systemGray6))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .stroke(isSelected ? Color.blue : Color(.separator).opacity(0.3), lineWidth: 1)
+            )
+            .onTapGesture {
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    if isSelected {
+                        selectedMenu = nil
+                    } else {
+                        selectedMenu = menuType
+                    }
+                    onMenuChange?()
+                }
+            }
+            .accessibilityLabel(menuType.title)
+            .accessibilityHint(hasSubmenu ? "하위 메뉴를 보려면 탭하세요" : "기능을 실행하려면 탭하세요")
+            .accessibilityValue(isSelected ? "선택됨" : "선택되지 않음")
+        } else {
+            // 아이패드: 가로 배치 (기존 최적화 유지)
+            Button(action: {
+                print("[DEBUG] 🎯 가이드 기반 메뉴 토글 - '\(menuType.title)' 터치됨")
+                print("[DEBUG] 📊 터치 전 상태 - selectedMenu: \(selectedMenu?.title ?? "nil")")
+                
+                // 가이드에 따른 완벽한 메뉴 토글 시스템
+                if selectedMenu == menuType {
+                    // 같은 메뉴를 터치하면 닫기
+                    selectedMenu = nil
+                    print("[DEBUG] ✅ 메뉴 '\(menuType.title)' 닫힘")
+                } else {
+                    // 다른 메뉴를 터치하면 기존 메뉴를 닫고 새 메뉴 열기
+                    selectedMenu = menuType
+                    print("[DEBUG] ✅ 메뉴 '\(menuType.title)' 열림")
+                }
+                
+                // 가이드에 따른 메뉴 변경 콜백
+                onMenuChange?()
+            }) {
+                HStack(spacing: 6) {
+                    Image(systemName: menuType.icon)
+                        .font(.system(size: 16))
+                    Text(menuType.title)
+                        .font(.system(size: 16, weight: .medium))
+                }
+                .foregroundColor(.primary)
+                .padding(.horizontal, 20)
+                .contentShape(Rectangle())
+                .background(
+                    GeometryReader { geo in
+                        Color.clear
+                            .preference(key: MenuPositionKey.self, value: [MenuPosition(type: menuType, frame: geo.frame(in: .global), textFrame: geo.frame(in: .global))])
+                            .onAppear {
+                                print("[DEBUG] 📍 메뉴 위치 정보 수집 - \(menuType): \(geo.frame(in: .global))")
+                            }
+                            .onChange(of: geo.frame(in: .global)) { newFrame in
+                                print("[DEBUG] 📍 메뉴 위치 변경 - \(menuType): \(newFrame)")
+                            }
+                            .id("menu-\(menuType.rawValue)") // 고유 ID로 정확한 위치 추적
+                    }
+                )
+            }
+            // 가이드에 따른 완벽한 접근성 지원
+            .accessibilityLabel(menuType.title)
+            .accessibilityHint(selectedMenu == menuType ? "선택된 메뉴입니다. 다시 탭하여 닫을 수 있습니다." : "선택하여 \(menuType.title) 메뉴를 열 수 있습니다.")
+            .accessibilityValue(selectedMenu == menuType ? "열림" : "닫힘")
         }
     }
     
