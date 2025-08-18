@@ -403,13 +403,14 @@ struct FloatingToolbarView: View {
     /// 아이폰과 아이패드 각각 최적화된 버튼 제공
     /// - Parameter menuType: 메뉴 타입
     /// - Returns: 완벽한 정렬과 토글 기능을 가진 버튼
+    @ViewBuilder
     private func toolbarButton(menuType: MenuType) -> some View {
         let isSelected = selectedMenu == menuType
         let hasSubmenu = !menuItems(for: menuType).isEmpty
         
         if UIDevice.current.userInterfaceIdiom == .phone {
             // 아이폰: 세로 배치 (아이폰용 분기에서 가져온 최적화)
-            return VStack(spacing: 4) {
+            VStack(spacing: 4) {
                 Image(systemName: menuType.icon)
                     .font(.system(size: 16, weight: .medium))
                     .foregroundColor(isSelected ? .white : .primary)
@@ -444,7 +445,7 @@ struct FloatingToolbarView: View {
             .accessibilityValue(isSelected ? "선택됨" : "선택되지 않음")
         } else {
             // 아이패드: 가로 배치 (기존 최적화 유지)
-            return Button(action: {
+            Button(action: {
                 print("[DEBUG] 🎯 가이드 기반 메뉴 토글 - '\(menuType.title)' 터치됨")
                 print("[DEBUG] 📊 터치 전 상태 - selectedMenu: \(selectedMenu?.title ?? "nil")")
                 
