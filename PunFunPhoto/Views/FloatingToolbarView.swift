@@ -214,7 +214,6 @@ struct FloatingToolbarView: View {
                             .overlay {
                                 ipadTopToolbarContent
                             }
-                        CenterToastView(message: toastMessage, type: toastType.toCenterToastType, isVisible: $showToast)
                     }
                 }
             }
@@ -686,6 +685,9 @@ struct FloatingToolbarView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .padding(.top, getSafeAreaInsets().top)
         .overlay(ipadSubmenuOverlay)
+        .overlay(
+            CenterToastView(message: toastMessage, type: toastType.toCenterToastType, isVisible: $showToast)
+        )
     }
     
     /// 아이패드용 상단 툴바 버튼 (최종 버전)
