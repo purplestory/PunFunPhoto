@@ -859,11 +859,6 @@ struct FloatingToolbarView: View {
                 }
                 .buttonStyle(PlainButtonStyle())
                 .disabled(!item.isEnabled)
-                
-                if item.id != menuItems(for: menuType).last?.id {
-                    Divider()
-                        .padding(.leading, 40)
-                }
             }
         }
         .background(
