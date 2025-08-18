@@ -60,6 +60,6 @@ struct CenterToastView: View {
         colorScheme == .dark ? Color(.systemGray6).opacity(0.95) : Color(.black).opacity(0.85)
     }
     private var textColor: Color {
-        colorScheme == .dark ? .black : .white
+        colorScheme == .dark ? .white : .white
     }
 } 
