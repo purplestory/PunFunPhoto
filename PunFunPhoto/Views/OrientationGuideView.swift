@@ -6,20 +6,16 @@ struct OrientationGuideView: View {
 
     var body: some View {
         ZStack {
-            // 아이폰용 단색 배경 (50% 투명도)
-            if UIDevice.current.userInterfaceIdiom == .phone {
-                Color(red: 126/255, green: 98/255, blue: 214/255) // R126 G98 B214
-                    .opacity(0.5) // 50% 투명도
-                    .ignoresSafeArea()
-            }
+            // 유니버셜 배경색 (50% 투명도)
+            Color(red: 126/255, green: 98/255, blue: 214/255) // R126 G98 B214
+                .opacity(0.5) // 50% 투명도
+                .ignoresSafeArea()
             
             ContentView()
                 .environmentObject(appState)
         }
         .background(
-            UIDevice.current.userInterfaceIdiom == .phone ? 
-                Color(red: 126/255, green: 98/255, blue: 214/255).opacity(0.5) : 
-                Color.white
+            Color(red: 126/255, green: 98/255, blue: 214/255).opacity(0.5)
         )
         .ignoresSafeArea()
         .onChange(of: appState.currentProjectURL) { _, newURL in
