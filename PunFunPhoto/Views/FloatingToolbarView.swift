@@ -177,7 +177,7 @@ struct FloatingToolbarView: View {
             if let selected = selectedMenu {
                 VStack(spacing: 0) {
                     Spacer()
-                        .frame(height: isMobile ? 46 : 54) // 툴바 높이만큼 여백 + 10픽셀 추가
+                        .frame(height: isMobile ? 56 : 64) // 툴바 높이만큼 여백 + 20픽셀 추가
                     
                     // 정확한 메뉴 위치에 드롭다운 배치
                     HStack {
