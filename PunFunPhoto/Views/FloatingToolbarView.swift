@@ -152,9 +152,7 @@ struct FloatingToolbarView: View {
     @State private var toastMessage: String = ""
     @State private var toastType: AlertMessage.AlertType = .success
     
-    private var toolbarHeight: CGFloat {
-        44 + getSafeAreaInsets().top
-    }
+
     
     /// 가이드에 따른 완벽한 툴바 컨텐츠 구현
     /// 완벽한 반응형 디자인과 접근성을 제공
