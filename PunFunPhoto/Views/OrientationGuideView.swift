@@ -6,19 +6,10 @@ struct OrientationGuideView: View {
 
     var body: some View {
         ZStack {
-            // 아이폰용 RGB 그라데이션 배경
+            // 아이폰용 단색 배경
             if UIDevice.current.userInterfaceIdiom == .phone {
-                LinearGradient(
-                    gradient: Gradient(colors: [
-                        Color(red: 0.2, green: 0.6, blue: 1.0),
-                        Color(red: 0.8, green: 0.4, blue: 1.0),
-                        Color(red: 1.0, green: 0.6, blue: 0.8),
-                        Color(red: 126/255, green: 98/255, blue: 214/255) // R126 G98 B214
-                    ]),
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                )
-                .ignoresSafeArea()
+                Color(red: 126/255, green: 98/255, blue: 214/255) // R126 G98 B214
+                    .ignoresSafeArea()
             }
             
             ContentView()
