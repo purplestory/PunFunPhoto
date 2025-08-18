@@ -125,7 +125,7 @@ struct FloatingToolbarView: View {
     /// 툴바 높이 계산 (아이폰에서만 확장/축소)
     private var toolbarHeight: CGFloat {
         if UIDevice.current.userInterfaceIdiom == .phone {
-            return isToolbarExpanded ? 200 : 44 // 확장된 상태 또는 기본 상태
+            return isToolbarExpanded ? 200 : 50 // 확장된 상태 또는 기본 상태 (높이 조금 증가)
         } else {
             return 44 // 아이패드는 항상 고정 높이
         }
@@ -157,27 +157,35 @@ struct FloatingToolbarView: View {
     /// 가이드에 따른 완벽한 툴바 컨텐츠 구현
     /// 완벽한 반응형 디자인과 접근성을 제공
     private var toolbarContent: some View {
-        VStack(spacing: 0) {
-            // 가이드에 따른 완벽한 상단 툴바
-            if UIDevice.current.userInterfaceIdiom == .phone {
-                // 아이폰: 왼쪽으로 접히거나 확장되는 툴바
-                phoneToolbar
-            } else {
-                // 아이패드: 기존 가로 툴바
-                ipadToolbar
+        ZStack(alignment: .topLeading) {
+            // 아이패드: 기존 가로 툴바 (상단에 위치)
+            if UIDevice.current.userInterfaceIdiom == .pad {
+                VStack(spacing: 0) {
+                    ipadToolbar
+                    Spacer()
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+                .padding(.top, topPaddingForDevice)
             }
-            Spacer()
+            
+            // 아이폰: 왼쪽 세로 메뉴 (왼쪽 상단에 고정)
+            if UIDevice.current.userInterfaceIdiom == .phone {
+                VStack(spacing: 0) {
+                    phoneToolbar
+                    Spacer()
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+                .padding(.top, topPaddingForDevice)
+            }
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-        .padding(.top, topPaddingForDevice) // 아이패드 전용 상단 여백 적용
         .overlay(submenuOverlay)
     }
     
-    /// 아이폰 전용 툴바 (기본적으로 닫혀있고, 펼치면 위아래로 열림)
+    /// 아이폰 전용 툴바 (왼쪽 상단에 고정, 위에서 아래로 펼쳐짐)
     private var phoneToolbar: some View {
         VStack(spacing: 0) {
             if isToolbarExpanded {
-                // 확장된 상태: 세로로 메뉴 배치
+                // 확장된 상태: 위에서 아래로 세로 메뉴 배치
                 VStack(spacing: 8) {
                     ForEach(MenuType.allCases, id: \.self) { menuType in
                         toolbarButton(menuType: menuType)
@@ -201,49 +209,42 @@ struct FloatingToolbarView: View {
                 }
                 .padding(.vertical, 12)
                 .padding(.horizontal, 8)
+                .background(
+                    Color(.systemBackground)
+                        .opacity(0.95)
+                        .shadow(color: Color.black.opacity(0.15), radius: 10, x: 0, y: 5)
+                )
+                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .stroke(Color(.separator).opacity(0.2), lineWidth: 0.5)
+                )
             } else {
-                // 기본 상태: 작은 펼치기 버튼만 표시
-                HStack {
-                    // 펼치기 버튼
-                    Button(action: {
-                        withAnimation(.easeInOut(duration: 0.3)) {
-                            isToolbarExpanded = true
-                        }
-                    }) {
-                        Image(systemName: "chevron.down")
-                            .font(.system(size: 14, weight: .medium))
-                            .foregroundColor(.primary)
-                            .frame(width: 32, height: 32)
-                            .background(Color(.systemGray6))
-                            .clipShape(Circle())
+                // 기본 상태: 왼쪽 상단에 작은 펼치기 버튼만 표시
+                Button(action: {
+                    withAnimation(.easeInOut(duration: 0.3)) {
+                        isToolbarExpanded = true
                     }
-                    .accessibilityLabel("툴바 펼치기")
-                    .accessibilityHint("툴바를 펼쳐서 메뉴를 사용합니다")
-                    
-                    Spacer()
+                }) {
+                    Image(systemName: "chevron.down")
+                        .font(.system(size: 16, weight: .medium))
+                        .foregroundColor(.primary)
+                        .frame(width: 40, height: 40)
+                        .background(Color(.systemBackground).opacity(0.9))
+                        .clipShape(Circle())
+                        .shadow(color: Color.black.opacity(0.1), radius: 4, x: 0, y: 2)
                 }
-                .padding(.horizontal, 12)
-                .padding(.vertical, 6)
+                .accessibilityLabel("툴바 펼치기")
+                .accessibilityHint("툴바를 펼쳐서 메뉴를 사용합니다")
             }
         }
+        .padding(.leading, 8)
         .background(
             GeometryReader { geo in
                 Color.clear
                     .preference(key: ViewPreferenceKeys.ToolbarFrameKey.self, value: geo.frame(in: .named("CanvasSpace")))
             }
         )
-        .background(
-            Color(.systemBackground)
-                .opacity(0.95)
-                .shadow(color: Color.black.opacity(0.15), radius: 10, x: 0, y: 5)
-        )
-        .clipShape(RoundedRectangle(cornerRadius: 50, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 50, style: .continuous)
-                .stroke(Color(.separator).opacity(0.2), lineWidth: 0.5)
-        )
-        .font(.system(size: dynamicFontSize, weight: .medium))
-        .frame(height: toolbarHeight) // 동적 높이 적용
     }
     
     /// 아이패드 전용 툴바
