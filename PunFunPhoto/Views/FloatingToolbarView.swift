@@ -409,7 +409,7 @@ struct FloatingToolbarView: View {
         
         if UIDevice.current.userInterfaceIdiom == .phone {
             // 아이폰: 세로 배치 (아이폰용 분기에서 가져온 최적화)
-            VStack(spacing: 4) {
+            return VStack(spacing: 4) {
                 Image(systemName: menuType.icon)
                     .font(.system(size: 16, weight: .medium))
                     .foregroundColor(isSelected ? .white : .primary)
@@ -444,7 +444,7 @@ struct FloatingToolbarView: View {
             .accessibilityValue(isSelected ? "선택됨" : "선택되지 않음")
         } else {
             // 아이패드: 가로 배치 (기존 최적화 유지)
-            Button(action: {
+            return Button(action: {
                 print("[DEBUG] 🎯 가이드 기반 메뉴 토글 - '\(menuType.title)' 터치됨")
                 print("[DEBUG] 📊 터치 전 상태 - selectedMenu: \(selectedMenu?.title ?? "nil")")
                 
