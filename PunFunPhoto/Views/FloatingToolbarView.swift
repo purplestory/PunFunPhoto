@@ -208,11 +208,11 @@ struct FloatingToolbarView: View {
                         }
                     }
                 } else {
-                    // 아이패드: 하단 중앙 툴바 구조
-                    ZStack(alignment: .bottom) {
+                    // 아이패드: 상단 드롭다운 툴바 구조 (최종 버전)
+                    ZStack(alignment: .top) {
                         Color.clear
                             .overlay {
-                                ipadBottomToolbarContent
+                                ipadTopToolbarContent
                             }
                     }
                     .overlay(
@@ -655,18 +655,17 @@ struct FloatingToolbarView: View {
     }
     
     // MARK: - iPad Toolbar Content
-    /// 아이패드용 하단 중앙 툴바 컨텐츠
-    private var ipadBottomToolbarContent: some View {
+    /// 아이패드용 상단 툴바 컨텐츠 (최종 버전)
+    private var ipadTopToolbarContent: some View {
         VStack(spacing: 0) {
-            Spacer()
-            
-            HStack(spacing: 20) {
+            // 가이드에 따른 완벽한 상단 툴바
+            HStack(spacing: dynamicSpacing) {
                 ForEach(MenuType.allCases, id: \.self) { menuType in
-                    ipadBottomToolbarButton(menuType: menuType)
+                    ipadTopToolbarButton(menuType: menuType)
                 }
             }
-            .padding(.horizontal, 24)
-            .padding(.vertical, 16)
+            .padding(.horizontal, dynamicPadding)
+            .padding(.vertical, 8)
             .background(
                 GeometryReader { geo in
                     Color.clear
@@ -678,59 +677,67 @@ struct FloatingToolbarView: View {
                     .opacity(0.95)
                     .shadow(color: Color.black.opacity(0.15), radius: 10, x: 0, y: 5)
             )
-            .clipShape(RoundedRectangle(cornerRadius: 25, style: .continuous))
+            .clipShape(RoundedRectangle(cornerRadius: 50, style: .continuous))
             .overlay(
-                RoundedRectangle(cornerRadius: 25, style: .continuous)
+                RoundedRectangle(cornerRadius: 50, style: .continuous)
                     .stroke(Color(.separator).opacity(0.2), lineWidth: 0.5)
             )
-            .padding(.bottom, 20)
+            .font(.system(size: dynamicFontSize, weight: .medium))
+            .frame(height: 44)
+            Spacer()
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        .padding(.top, getSafeAreaInsets().top)
     }
     
-    /// 아이패드용 하단 툴바 버튼
+    /// 아이패드용 상단 툴바 버튼 (최종 버전)
     @ViewBuilder
-    private func ipadBottomToolbarButton(menuType: MenuType) -> some View {
+    private func ipadTopToolbarButton(menuType: MenuType) -> some View {
         let isSelected = selectedMenu == menuType
+        let hasSubmenu = !menuItems(for: menuType).isEmpty
         
         Button(action: {
-            print("[DEBUG] 🎯 아이패드 하단 툴바 메뉴 토글 - '\(menuType.title)' 터치됨")
+            print("[DEBUG] 🎯 가이드 기반 메뉴 토글 - '\(menuType.title)' 터치됨")
+            print("[DEBUG] 📊 터치 전 상태 - selectedMenu: \(selectedMenu?.title ?? "nil")")
             
+            // 가이드에 따른 완벽한 메뉴 토글 시스템
             if selectedMenu == menuType {
+                // 같은 메뉴를 터치하면 닫기
                 selectedMenu = nil
                 print("[DEBUG] ✅ 메뉴 '\(menuType.title)' 닫힘")
             } else {
+                // 다른 메뉴를 터치하면 기존 메뉴를 닫고 새 메뉴 열기
                 selectedMenu = menuType
                 print("[DEBUG] ✅ 메뉴 '\(menuType.title)' 열림")
             }
             
+            // 가이드에 따른 메뉴 변경 콜백
             onMenuChange?()
         }) {
-            VStack(spacing: 8) {
+            HStack(spacing: 6) {
                 Image(systemName: menuType.icon)
-                    .font(.system(size: 24, weight: .medium))
-                    .foregroundColor(isSelected ? .blue : .primary)
-                
+                    .font(.system(size: 16))
                 Text(menuType.title)
-                    .font(.system(size: 12, weight: .medium))
-                    .foregroundColor(isSelected ? .blue : .primary)
-                    .lineLimit(1)
+                    .font(.system(size: 16, weight: .medium))
             }
-            .frame(width: 60, height: 60)
+            .foregroundColor(.primary)
+            .padding(.horizontal, 20)
             .contentShape(Rectangle())
             .background(
                 GeometryReader { geo in
                     Color.clear
                         .preference(key: MenuPositionKey.self, value: [MenuPosition(type: menuType, frame: geo.frame(in: .global), textFrame: geo.frame(in: .global))])
                         .onAppear {
-                            print("[DEBUG] 📍 아이패드 메뉴 위치 정보 수집 - \(menuType): \(geo.frame(in: .global))")
+                            print("[DEBUG] 📍 메뉴 위치 정보 수집 - \(menuType): \(geo.frame(in: .global))")
                         }
                         .onChange(of: geo.frame(in: .global)) { newFrame in
-                            print("[DEBUG] 📍 아이패드 메뉴 위치 변경 - \(menuType): \(newFrame)")
+                            print("[DEBUG] 📍 메뉴 위치 변경 - \(menuType): \(newFrame)")
                         }
-                        .id("ipad-menu-\(menuType.rawValue)")
+                        .id("menu-\(menuType.rawValue)") // 고유 ID로 정확한 위치 추적
                 }
             )
         }
+        // 가이드에 따른 완벽한 접근성 지원
         .accessibilityLabel(menuType.title)
         .accessibilityHint(selectedMenu == menuType ? "선택된 메뉴입니다. 다시 탭하여 닫을 수 있습니다." : "선택하여 \(menuType.title) 메뉴를 열 수 있습니다.")
         .accessibilityValue(selectedMenu == menuType ? "열림" : "닫힘")
@@ -789,14 +796,15 @@ struct FloatingToolbarView: View {
         .accessibilityValue(selectedMenu == menuType ? "열림" : "닫힘")
     }
     
-    /// 아이패드용 서브메뉴 오버레이
+    /// 아이패드용 서브메뉴 오버레이 (최종 버전)
     private var ipadSubmenuOverlay: some View {
         Group {
             if let selected = selectedMenu {
                 VStack(spacing: 0) {
                     Spacer()
+                        .frame(height: isMobile ? 61 : 69) // 툴바 높이만큼 여백 + 25픽셀 추가
                     
-                    // 하단 툴바 위에 드롭다운 배치
+                    // 정확한 메뉴 위치에 드롭다운 배치
                     HStack {
                         Spacer()
                             .frame(width: getExactMenuOffset(for: selected))
@@ -811,7 +819,6 @@ struct FloatingToolbarView: View {
                         
                         Spacer()
                     }
-                    .padding(.bottom, 100) // 하단 툴바 위에 배치
                     
                     Spacer()
                 }
