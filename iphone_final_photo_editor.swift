@@ -42,6 +42,7 @@ struct PhotoEditorView: View {
     @State private var selectedTextId: UUID? = nil
     @State private var selectedStickerId: UUID? = nil
     @State private var objectMenuPosition: CGPoint = .zero
+    @State private var isMenuOpen: Bool = false // 메뉴 상태 추적
     
     // 컨텍스트 메뉴 타입을 정의
     enum ContextMenuType: Equatable {
@@ -90,6 +91,45 @@ struct PhotoEditorView: View {
         showTopLoader1ContextMenu = nil
         showTopLoader2ContextMenu = nil
         showObjectMenu = false
+    }
+    
+    // 아이패드용 상단 메뉴
+    private var topMenuBar: some View {
+        HStack(spacing: 20) {
+            ForEach(MenuType.allCases, id: \.self) { menuType in
+                Button(action: {
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                        if selectedMenu == menuType {
+                            selectedMenu = nil
+                        } else {
+                            selectedMenu = menuType
+                        }
+                    }
+                }) {
+                    HStack(spacing: 8) {
+                        Image(systemName: menuType.icon)
+                            .font(.system(size: 16, weight: .medium))
+                            .foregroundColor(selectedMenu == menuType ? .blue : .primary)
+                        
+                        Text(menuType.title)
+                            .font(.system(size: 16, weight: .medium))
+                            .foregroundColor(selectedMenu == menuType ? .blue : .primary)
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 12)
+                    .background(
+                        selectedMenu == menuType ? Color.blue.opacity(0.1) : Color.clear
+                    )
+                    .cornerRadius(8)
+                }
+                .buttonStyle(PlainButtonStyle())
+            }
+            Spacer()
+        }
+        .padding(.horizontal, 20)
+        .padding(.vertical, 12)
+        .background(Color(.systemBackground))
+        .shadow(color: Color.black.opacity(0.1), radius: 2, x: 0, y: 1)
     }
     
     // 메인 캔버스(포토박스, 프로젝트명 등)를 별도 뷰로 분리
@@ -312,7 +352,10 @@ struct PhotoEditorView: View {
             let toolbarHeight: CGFloat = 44 + safeAreaTop
             let toolbarMargin: CGFloat = max(70, screenHeight * 0.03) // 화면 높이의 3% (최소 24pt)
             let availableHeight = max(1, screenHeight - toolbarHeight - toolbarMargin - 60 )
-            let scaleW = screenWidth / baseCanvasSize.width
+            
+            // 메뉴 상태에 따라 사용 가능한 너비 조정 (폭 축소 제거, 이동만 처리)
+            let availableWidth = screenWidth
+            let scaleW = availableWidth / baseCanvasSize.width
             let scaleH = availableHeight / baseCanvasSize.height
             let baseScaleFactor = max(0.1, min(scaleW, scaleH))
             
@@ -358,16 +401,32 @@ struct PhotoEditorView: View {
             }
 
             ZStack {
-                Color.white
-                VStack {
-                    Spacer()
-                    mainCanvas(scaleFactor: scaleFactor)
-                        .padding(.horizontal, 20) // 좌우 여백 추가
-                        .padding(.vertical, 20)   // 상하 여백 추가
-                    Spacer()
+                Color(red: 0.494, green: 0.384, blue: 0.839)
+                
+                // 아이패드에서만 상단 메뉴 표시
+                if UIDevice.current.userInterfaceIdiom == .pad {
+                    VStack(spacing: 0) {
+                        // 상단 메뉴
+                        topMenuBar
+                        
+                        // 메인 캔버스
+                        mainCanvas(scaleFactor: scaleFactor)
+                            .padding(.leading, 0)
+                            .padding(.trailing, 0)
+                            .padding(.top, 0)
+                            .padding(.bottom, 0)
+                    }
+                } else {
+                    // 아이폰에서는 기존 로직 유지
+                    VStack(spacing: 0) {
+                        mainCanvas(scaleFactor: scaleFactor)
+                            .padding(.leading, isMenuOpen ? 16 : 0) // 살짝 시각 여유
+                            .padding(.trailing, 0)
+                            .padding(.top, 0)
+                            .padding(.bottom, 0)
+                            .offset(x: isMenuOpen ? 80 : 0) // 메뉴가 열려있을 때 적절한 거리만큼 오른쪽으로 이동
+                    }
                 }
-                .frame(maxWidth: .infinity)
-                .zIndex(0)
                 
 
 
@@ -534,28 +593,35 @@ struct PhotoEditorView: View {
                     }
                 }
                 
-                FloatingToolbarView(
-                    showSafeFrame: $showSafeFrame,
-                    photo1: photo1,
-                    photo2: photo2,
-                    topLoader1: topLoader1,
-                    topLoader2: topLoader2,
-                    showPhotoPicker: $showPhotoPicker,
-                    photoPickerMode: $photoPickerMode,
-                    showAlreadySelectedAlert: $showAlreadySelectedAlert,
-                    selectedMenu: $selectedMenu,
-                    showContextMenu: $showContextMenu,
-                    showTopLoader1ContextMenu: $showTopLoader1ContextMenu,
-                    showTopLoader2ContextMenu: $showTopLoader2ContextMenu,
-                    onClosePopupMenus: {
-                        print("[DEBUG] 🔥 PhotoEditorView onClosePopupMenus 콜백 실행됨!")
-                        showContextMenu = false
-                        showTopLoader1ContextMenu = nil
-                        showTopLoader2ContextMenu = nil
-                        showObjectMenu = false
-                        activeContextMenu = nil  // 활성 컨텍스트 메뉴 상태도 초기화
-                    }
-                )
+                // 아이폰에서만 FloatingToolbarView 표시
+                if UIDevice.current.userInterfaceIdiom == .phone {
+                    FloatingToolbarView(
+                        showSafeFrame: $showSafeFrame,
+                        photo1: photo1,
+                        photo2: photo2,
+                        topLoader1: topLoader1,
+                        topLoader2: topLoader2,
+                        showPhotoPicker: $showPhotoPicker,
+                        photoPickerMode: $photoPickerMode,
+                        showAlreadySelectedAlert: $showAlreadySelectedAlert,
+                        selectedMenu: $selectedMenu,
+                        showContextMenu: $showContextMenu,
+                        showTopLoader1ContextMenu: $showTopLoader1ContextMenu,
+                        showTopLoader2ContextMenu: $showTopLoader2ContextMenu,
+                        onClosePopupMenus: {
+                            print("[DEBUG] 🔥 PhotoEditorView onClosePopupMenus 콜백 실행됨!")
+                            showContextMenu = false
+                            showTopLoader1ContextMenu = nil
+                            showTopLoader2ContextMenu = nil
+                            showObjectMenu = false
+                            activeContextMenu = nil  // 활성 컨텍스트 메뉴 상태도 초기화
+                        },
+                        onMenuStateChange: { menuOpen in
+                            isMenuOpen = menuOpen
+                        },
+                        scaleFactor: scaleFactor
+                    )
+                }
             }
             .background(
                 GeometryReader { geo in

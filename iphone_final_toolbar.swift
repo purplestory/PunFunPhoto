@@ -157,84 +157,59 @@ struct FloatingToolbarView: View {
     // 메뉴 상태를 외부에 알리는 콜백
     var onMenuStateChange: ((Bool) -> Void)? = nil
     
-    // 아이패드용 상태 변수들
-    @State private var menuPositions: [MenuPosition] = []
-    
-    /// 가이드에 따른 동적 레이아웃 계산
-    private var dynamicSpacing: CGFloat {
-        isMobile ? 16 : (isTablet ? 30 : 20) // 아이패드에서 간격 확대
-    }
-    
-    private var dynamicPadding: CGFloat {
-        isMobile ? 10 : (isTablet ? 16 : 12) // 아이패드에서 패딩 확대
-    }
-    
     // MARK: - Main View
     var body: some View {
         GeometryReader { geometry in
             ZStack(alignment: .topLeading) {
-                if UIDevice.current.userInterfaceIdiom == .phone {
-                    // 아이폰: 아코디언 메뉴 구조
-                    toolbarContent
-                    if !isMenuOpen {
-                        if let icon = appIconUIImage() {
-                            Image(uiImage: icon)
-                                .resizable()
-                                .renderingMode(.original)
-                                .scaledToFit()
-                                .frame(width: 72, height: 72)
-                                .background(Color.clear)
-                                .allowsHitTesting(true)
-                                .drawingGroup()
-                                .compositingGroup()
-                                .blendMode(.normal)
-                                .onTapGesture {
-                                    withAnimation(.easeInOut(duration: 0.2)) {
-                                        isMenuOpen = true
-                                        onMenuStateChange?(true)
-                                    }
-                                }
-                                .padding(.leading, 12)
-                                .padding(.top, topPaddingForDevice + 8)
-                        } else {
-                            Button(action: {
+                toolbarContent
+                if isPhone && !isMenuOpen {
+                    if let icon = appIconUIImage() {
+                        Image(uiImage: icon)
+                            .resizable()
+                            .renderingMode(.original)
+                            .scaledToFit()
+                            .frame(width: 72, height: 72)
+                            .background(Color.clear)
+                            .allowsHitTesting(true)
+                            .drawingGroup()
+                            .compositingGroup()
+                            .blendMode(.normal)
+                            .onTapGesture {
                                 withAnimation(.easeInOut(duration: 0.2)) {
                                     isMenuOpen = true
                                     onMenuStateChange?(true)
                                 }
-                            }) {
-                                Text("펀펀포토")
-                                    .font(.system(size: 14, weight: .semibold))
-                                    .foregroundColor(.primary)
-                                    .padding(.horizontal, 12)
-                                    .padding(.vertical, 8)
-                                    .background(Color(.systemGray6))
-                                    .clipShape(RoundedRectangle(cornerRadius: 8))
                             }
-                            .buttonStyle(PlainButtonStyle())
                             .padding(.leading, 12)
                             .padding(.top, topPaddingForDevice + 8)
-                        }
-                    }
-                } else {
-                    // 아이패드: 기존 드롭다운 툴바 구조
-                    ZStack(alignment: .top) {
-                        Color.clear
-                            .overlay {
-                                ipadToolbarContent
+                    } else {
+                        Button(action: {
+                            withAnimation(.easeInOut(duration: 0.2)) {
+                                isMenuOpen = true
+                                onMenuStateChange?(true)
                             }
+                        }) {
+                            Text("펀펀포토")
+                                .font(.system(size: 14, weight: .semibold))
+                                .foregroundColor(.primary)
+                                .padding(.horizontal, 12)
+                                .padding(.vertical, 8)
+                                .background(Color(.systemGray6))
+                                .clipShape(RoundedRectangle(cornerRadius: 8))
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                        .padding(.leading, 12)
+                        .padding(.top, topPaddingForDevice + 8)
                     }
-                    .overlay(
-                        // 드롭다운 메뉴 오버레이
-                        selectedMenu != nil ? AnyView(ipadSubmenuOverlay) : AnyView(Color.clear)
-                    )
                 }
             }
             .overlay(
                 // 아이폰에서만 토스트 메시지를 화면 중앙에 표시
-                UIDevice.current.userInterfaceIdiom == .phone ? 
-                    AnyView(CenterToastView(message: toastMessage, type: toastType.toCenterToastType, isVisible: $showToast)) : 
-                    AnyView(Color.clear)
+                Group {
+                    if isPhone {
+                        CenterToastView(message: toastMessage, type: toastType.toCenterToastType, isVisible: $showToast)
+                    }
+                }
             )
         }
         .ignoresSafeArea()
@@ -660,181 +635,6 @@ struct FloatingToolbarView: View {
                     }
                 })
             ]
-        }
-    }
-    
-    // MARK: - iPad Toolbar Content
-    /// 아이패드용 툴바 컨텐츠
-    private var ipadToolbarContent: some View {
-        VStack(spacing: 0) {
-            HStack(spacing: dynamicSpacing) {
-                ForEach(MenuType.allCases, id: \.self) { menuType in
-                    ipadToolbarButton(menuType: menuType)
-                }
-            }
-            .padding(.horizontal, dynamicPadding)
-            .padding(.vertical, 8)
-            .background(
-                GeometryReader { geo in
-                    Color.clear
-                        .preference(key: ViewPreferenceKeys.ToolbarFrameKey.self, value: geo.frame(in: .global))
-                }
-            )
-            .background(
-                Color(.systemBackground)
-                    .opacity(0.95)
-                    .shadow(color: Color.black.opacity(0.15), radius: 10, x: 0, y: 5)
-            )
-            .clipShape(RoundedRectangle(cornerRadius: 50, style: .continuous))
-            .overlay(
-                RoundedRectangle(cornerRadius: 50, style: .continuous)
-                    .stroke(Color(.separator).opacity(0.2), lineWidth: 0.5)
-            )
-        }
-    }
-    
-    /// 아이패드용 툴바 버튼
-    @ViewBuilder
-    private func ipadToolbarButton(menuType: MenuType) -> some View {
-        let isSelected = selectedMenu == menuType
-        let hasSubmenu = !menuItems(for: menuType).isEmpty
-        
-        Button(action: {
-            print("[DEBUG] 🎯 가이드 기반 메뉴 토글 - '\(menuType.title)' 터치됨")
-            print("[DEBUG] 📊 터치 전 상태 - selectedMenu: \(selectedMenu?.title ?? "nil")")
-            
-            // 가이드에 따른 완벽한 메뉴 토글 시스템
-            if selectedMenu == menuType {
-                // 같은 메뉴를 터치하면 닫기
-                selectedMenu = nil
-                print("[DEBUG] ✅ 메뉴 '\(menuType.title)' 닫힘")
-            } else {
-                // 다른 메뉴를 터치하면 기존 메뉴를 닫고 새 메뉴 열기
-                selectedMenu = menuType
-                print("[DEBUG] ✅ 메뉴 '\(menuType.title)' 열림")
-            }
-            
-            // 가이드에 따른 메뉴 변경 콜백
-            onMenuChange?()
-        }) {
-            HStack(spacing: 6) {
-                Image(systemName: menuType.icon)
-                    .font(.system(size: 16))
-                Text(menuType.title)
-                    .font(.system(size: 16, weight: .medium))
-            }
-            .foregroundColor(.primary)
-            .padding(.horizontal, 20)
-            .contentShape(Rectangle())
-            .background(
-                GeometryReader { geo in
-                    Color.clear
-                        .preference(key: MenuPositionKey.self, value: [MenuPosition(type: menuType, frame: geo.frame(in: .global), textFrame: geo.frame(in: .global))])
-                        .onAppear {
-                            print("[DEBUG] 📍 메뉴 위치 정보 수집 - \(menuType): \(geo.frame(in: .global))")
-                        }
-                        .onChange(of: geo.frame(in: .global)) { newFrame in
-                            print("[DEBUG] 📍 메뉴 위치 변경 - \(menuType): \(newFrame)")
-                        }
-                        .id("menu-\(menuType.rawValue)") // 고유 ID로 정확한 위치 추적
-                }
-            )
-        }
-        // 가이드에 따른 완벽한 접근성 지원
-        .accessibilityLabel(menuType.title)
-        .accessibilityHint(selectedMenu == menuType ? "선택된 메뉴입니다. 다시 탭하여 닫을 수 있습니다." : "선택하여 \(menuType.title) 메뉴를 열 수 있습니다.")
-        .accessibilityValue(selectedMenu == menuType ? "열림" : "닫힘")
-    }
-    
-    /// 아이패드용 서브메뉴 오버레이
-    private var ipadSubmenuOverlay: some View {
-        Group {
-            if let selected = selectedMenu {
-                VStack(spacing: 0) {
-                    Spacer()
-                        .frame(height: dropdownSpacing) // 디바이스별 최적화된 드롭다운 간격
-                    
-                    // 정확한 메뉴 위치에 드롭다운 배치
-                    HStack {
-                        Spacer()
-                            .frame(width: getExactMenuOffset(for: selected))
-                        
-                        ipadMenuOverlay(for: selected)
-                            .fixedSize(horizontal: true, vertical: false)
-                            .zIndex(100)
-                            .transition(.asymmetric(
-                                insertion: .scale(scale: 0.8).combined(with: .opacity),
-                                removal: .scale(scale: 0.8).combined(with: .opacity)
-                            ))
-                        
-                        Spacer()
-                    }
-                    
-                    Spacer()
-                }
-                .animation(.easeInOut(duration: 0.2), value: selected)
-            }
-        }
-    }
-    
-    /// 아이패드용 메뉴 오버레이
-    private func ipadMenuOverlay(for menuType: MenuType) -> some View {
-        VStack(alignment: .leading, spacing: 0) {
-            ForEach(menuItems(for: menuType)) { item in
-                Button(action: {
-                    withAnimation(.easeInOut(duration: 0.15)) {
-                        item.action()
-                        selectedMenu = nil
-                        onMenuChange?()
-                    }
-                }) {
-                    HStack(spacing: 8) {
-                        Image(systemName: item.icon)
-                            .imageScale(.medium)
-                            .frame(width: 24)
-                            .foregroundColor(item.isEnabled ? .primary : .secondary)
-                        Text(item.title)
-                            .font(.system(size: 16, weight: .medium))
-                            .lineLimit(1)
-                            .foregroundColor(item.isEnabled ? .primary : .secondary)
-                        Spacer()
-                    }
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 12)
-                    .contentShape(Rectangle())
-                }
-                .buttonStyle(PlainButtonStyle())
-                .disabled(!item.isEnabled)
-                
-                if item.id != menuItems(for: menuType).last?.id {
-                    Divider()
-                        .padding(.leading, 40)
-                }
-            }
-        }
-        .background(
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .fill(Color(.systemBackground))
-                .shadow(color: Color.black.opacity(0.15), radius: 10, x: 0, y: 5)
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .stroke(Color(.separator).opacity(0.2), lineWidth: 0.5)
-        )
-    }
-    
-    /// 정확한 메뉴 오프셋 계산
-    private func getExactMenuOffset(for menuType: MenuType) -> CGFloat {
-        let menuPosition = menuPositions.first { $0.type == menuType }
-        return menuPosition?.frame.minX ?? 0
-    }
-    
-    /// 드롭다운 간격 계산
-    private var dropdownSpacing: CGFloat {
-        if UIDevice.current.userInterfaceIdiom == .phone {
-            return 61 // 아이폰: 정확한 간격
-        } else {
-            return 69 // 아이패드: 넉넉한 간격
         }
     }
 }
