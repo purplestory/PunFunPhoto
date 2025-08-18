@@ -313,8 +313,8 @@ struct FloatingToolbarView: View {
             }
         }
         .padding(.horizontal, 20)
-        .padding(.vertical, 16)
-        .padding(.bottom, 0) // 하단 여백 제거
+        .padding(.top, 16)
+        .padding(.bottom, 8) // 하단 여백 최소화
         .background(Color(.systemBackground))
     }
     
@@ -326,7 +326,8 @@ struct FloatingToolbarView: View {
                     menuItemView(for: menuType)
                 }
             }
-            .padding(.vertical, 8)
+            .padding(.top, 0) // 상단 여백 제거
+            .padding(.bottom, 8)
         }
     }
     
@@ -407,7 +408,7 @@ struct FloatingToolbarView: View {
                     .padding(.horizontal, 20)
                     .padding(.vertical, 12)
                     .padding(.leading, 20) // 들여쓰기
-                    .background(Color.blue.opacity(0.05))
+                    .background(Color(red: 126/255, green: 98/255, blue: 214/255).opacity(0.05))
                 }
                 .buttonStyle(PlainButtonStyle())
                 .disabled(!item.isEnabled)
