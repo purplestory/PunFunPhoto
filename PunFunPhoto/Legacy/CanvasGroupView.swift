@@ -2,8 +2,7 @@ import SwiftUI
 
 struct CanvasGroupView: View {
     @Binding var showSafeFrame: Bool
-    @Binding var showToast: Bool
-    @Binding var toastMessage: String
+
     let scaleFactor: CGFloat
     let canvasSize: CGSize
     @ObservedObject var photo1: PhotoState
@@ -57,8 +56,7 @@ struct CanvasGroupView: View {
             onTextTapped: nil,
             onTopLoader1Tapped: nil,
             onTopLoader2Tapped: nil,
-            showToast: $showToast,
-            toastMessage: $toastMessage,
+
             selectedMenu: $selectedMenu,
             showContextMenu: $showContextMenu,
             showTopLoader1ContextMenu: .constant(false),

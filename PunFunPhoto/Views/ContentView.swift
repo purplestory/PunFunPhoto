@@ -18,6 +18,11 @@ struct ContentView: View {
     @State private var menuWidth: CGFloat = 0
     @State private var scaleFactor: CGFloat = 0.5 // 필요시 동적으로 계산
     
+    // 파일 관련 작업 상태 (세로 모드 허용)
+    @State private var isFileOperationActive = false
+    
+
+    
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @Environment(\.verticalSizeClass) private var verticalSizeClass
     
@@ -78,7 +83,7 @@ struct ContentView: View {
             ZStack {
                 let isPortrait = verticalSizeClass == .regular && horizontalSizeClass == .compact
                 let isPhone = UIDevice.current.userInterfaceIdiom == .phone
-                let shouldShowWarning = isPhone && isPortrait
+                let shouldShowWarning = isPhone && isPortrait && !isFileOperationActive
                 if shouldShowWarning {
                     VStack(spacing: 20) {
                         Image(systemName: "iphone.landscape")
@@ -108,7 +113,11 @@ struct ContentView: View {
                             selectedMenu: $selectedMenu,
                             showTopLoader1ContextMenu: $showTopLoader1ContextMenu,
                             showTopLoader2ContextMenu: $showTopLoader2ContextMenu,
-                            showObjectMenu: $showObjectMenu
+                            showObjectMenu: $showObjectMenu,
+                            onSystemUIActivityChange: { isActive in
+                                print("[DEBUG] ContentView - 시스템 UI 상태 변경: \(isActive)")
+                                isFileOperationActive = isActive
+                            }
                         )
                         // FloatingToolbarView는 PhotoEditorView 내부에서 처리됨
                     }
@@ -119,6 +128,13 @@ struct ContentView: View {
             }
             .onChange(of: rootGeo.frame(in: .global)) {
                 rootOrigin = rootGeo.frame(in: .global).origin
+            }
+            .onChange(of: isFileOperationActive) { _, newValue in
+                let isPortrait = verticalSizeClass == .regular && horizontalSizeClass == .compact
+                let isPhone = UIDevice.current.userInterfaceIdiom == .phone
+                if isPhone && isPortrait {
+                    print("[DEBUG] ContentView - 세로 모드 감지: isFileOperationActive=\(newValue), shouldShowWarning=\(isPhone && isPortrait && !newValue)")
+                }
             }
             .onChange(of: selectedMenu) { newValue in
                 print("[DEBUG] ContentView - selectedMenu 변경됨: \(newValue?.title ?? "nil")")

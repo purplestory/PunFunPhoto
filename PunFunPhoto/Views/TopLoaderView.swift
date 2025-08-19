@@ -24,6 +24,7 @@ private extension View {
 }
 
 struct TopLoaderView: View {
+    @EnvironmentObject var appState: AppState
     @ObservedObject var state: TopLoaderState
 
     @State private var showTextEditor = false
@@ -40,8 +41,7 @@ struct TopLoaderView: View {
     let boxOrigin: CGPoint
     let scaleFactor: CGFloat
     @State private var contextMenuBoxIndex: Int? = nil
-    @Binding var showToast: Bool
-    @Binding var toastMessage: String
+
     @Binding var selectedMenu: MenuType?
     @Binding var showTopLoaderContextMenu: Bool?
     @State private var showTopLoaderLibrary = false
@@ -59,13 +59,11 @@ struct TopLoaderView: View {
     // 원본 크기 기준 cornerRadius
     private let baseCornerRadius: CGFloat = 30
     
-    init(state: TopLoaderState, boxSize: CGSize, boxOrigin: CGPoint = .zero, scaleFactor: CGFloat = 1.0, showToast: Binding<Bool>, toastMessage: Binding<String>, selectedMenu: Binding<MenuType?>, showTopLoaderContextMenu: Binding<Bool?>, onStickerTapped: ((UUID, CGPoint) -> Void)? = nil, onTextTapped: ((UUID, CGPoint) -> Void)? = nil, onTopLoaderTapped: (() -> Void)? = nil) {
+    init(state: TopLoaderState, boxSize: CGSize, boxOrigin: CGPoint = .zero, scaleFactor: CGFloat = 1.0, selectedMenu: Binding<MenuType?>, showTopLoaderContextMenu: Binding<Bool?>, onStickerTapped: ((UUID, CGPoint) -> Void)? = nil, onTextTapped: ((UUID, CGPoint) -> Void)? = nil, onTopLoaderTapped: (() -> Void)? = nil) {
         self.state = state
         self.boxSize = boxSize
         self.boxOrigin = boxOrigin
         self.scaleFactor = scaleFactor
-        self._showToast = showToast
-        self._toastMessage = toastMessage
         self._selectedMenu = selectedMenu
         self._showTopLoaderContextMenu = showTopLoaderContextMenu
         self.onStickerTapped = onStickerTapped
@@ -329,8 +327,7 @@ struct TopLoaderView: View {
                 }
                 Button("저장") {
                     state.saveTopLoader(name: newTopLoaderName.isEmpty ? "내 탑로더 \(Date().formatted(date: .numeric, time: .shortened))" : newTopLoaderName)
-                    showToast = true
-                    toastMessage = "탑로더가 저장되었습니다"
+                    appState.showToastMessage("탑로더가 저장되었습니다")
                     showContextMenu = false
                     newTopLoaderName = ""
                 }
@@ -445,7 +442,7 @@ private func stickerView(for sticker: StickerItem) -> some View {
 }
 
 #Preview {
-    TopLoaderView(state: TopLoaderState(), boxSize: CGSize(width: 300, height: 400), showToast: .constant(false), toastMessage: .constant(""), selectedMenu: .constant(nil), showTopLoaderContextMenu: .constant(false))
+    TopLoaderView(state: TopLoaderState(), boxSize: CGSize(width: 300, height: 400), selectedMenu: .constant(nil), showTopLoaderContextMenu: .constant(false))
         .background(Color.gray.opacity(0.2))
 }
 

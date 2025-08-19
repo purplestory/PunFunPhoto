@@ -30,8 +30,7 @@ struct PhotoBoxContainerView: View {
     let onTopLoader1Tapped: (() -> Void)?
     let onTopLoader2Tapped: (() -> Void)?
     
-    @Binding var showToast: Bool
-    @Binding var toastMessage: String
+
     @Binding var selectedMenu: MenuType?
     @Binding var showContextMenu: Bool
     @Binding var showTopLoader1ContextMenu: Bool?
@@ -119,8 +118,6 @@ struct PhotoBoxContainerView: View {
                             boxSize: boxSize,
                             boxOrigin: .zero,
                             scaleFactor: scaleFactor,
-                            showToast: $showToast,
-                            toastMessage: $toastMessage,
                             selectedMenu: $selectedMenu,
                             showTopLoaderContextMenu: $showTopLoader1ContextMenu,
                             onStickerTapped: onStickerTapped,
@@ -148,8 +145,6 @@ struct PhotoBoxContainerView: View {
                             boxSize: boxSize,
                             boxOrigin: .zero,
                             scaleFactor: scaleFactor,
-                            showToast: $showToast,
-                            toastMessage: $toastMessage,
                             selectedMenu: $selectedMenu,
                             showTopLoaderContextMenu: $showTopLoader2ContextMenu,
                             onStickerTapped: onStickerTapped,

@@ -11,4 +11,19 @@ final class AppState: ObservableObject {
             Thread.callStackSymbols.forEach { print("  \($0)") }
         }
     }
+    
+    // 메뉴 상태 (전역 관리)
+    @Published var isMenuOpen: Bool = false
+    
+    // 토스트 메시지 상태 (전역 관리)
+    @Published var showToast: Bool = false
+    @Published var toastMessage: String = ""
+    @Published var toastType: AlertMessage.AlertType = .success
+    
+    // 토스트 메시지 표시 함수
+    func showToastMessage(_ message: String, type: AlertMessage.AlertType = .success) {
+        toastMessage = message
+        toastType = type
+        showToast = true
+    }
 }

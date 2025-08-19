@@ -8,6 +8,8 @@ extension Notification.Name {
 struct RootView: View {
     @State private var showSplash = true
     @StateObject private var appState = AppState() // ✅ 전역 상태 공유
+    
+
 
     var body: some View {
         ZStack {
@@ -17,6 +19,13 @@ struct RootView: View {
                 OrientationGuideView()
                     .environmentObject(appState)
             }
+            
+            // 통합된 토스트 메시지 (최상위 레벨)
+            CenterToastView(message: appState.toastMessage, type: appState.toastType.toCenterToastType, isVisible: $appState.showToast)
+                .offset(x: appState.isMenuOpen ? 80 : 0) // 메뉴가 열렸을 때 오른쪽으로 이동
+                .onAppear {
+                    print("[DEBUG] RootView - appState.isMenuOpen: \(appState.isMenuOpen)")
+                }
         }
         .onAppear {
             DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {

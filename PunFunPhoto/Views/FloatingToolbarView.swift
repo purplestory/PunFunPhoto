@@ -49,6 +49,7 @@ struct FloatingToolbarView: View {
     @Binding var showTopLoader2ContextMenu: Bool?
     var onMenuChange: (() -> Void)? = nil
     var onClosePopupMenus: (() -> Void)? = nil
+    var onSystemUIActivityChange: ((Bool) -> Void)? = nil // 시스템 UI 활성화 상태 변경 콜백
     let scaleFactor: CGFloat // 스케일 팩터 추가
     
 
@@ -70,6 +71,7 @@ struct FloatingToolbarView: View {
         onMenuChange: (() -> Void)? = nil,
         onClosePopupMenus: (() -> Void)? = nil,
         onMenuStateChange: ((Bool) -> Void)? = nil,
+        onSystemUIActivityChange: ((Bool) -> Void)? = nil,
         scaleFactor: CGFloat = 1.0
 
     ) {
@@ -88,6 +90,7 @@ struct FloatingToolbarView: View {
         self.onMenuChange = onMenuChange
         self.onClosePopupMenus = onClosePopupMenus
         self.onMenuStateChange = onMenuStateChange
+        self.onSystemUIActivityChange = onSystemUIActivityChange
         self.scaleFactor = scaleFactor
         print("[DEBUG] FloatingToolbarView init - onClosePopupMenus 콜백 저장됨: \(onClosePopupMenus != nil)")
     }
@@ -149,9 +152,6 @@ struct FloatingToolbarView: View {
     }
     
     // MARK: - State Variables
-    @State private var showToast = false // 토스트 표시 여부
-    @State private var toastMessage = "" // 토스트 메시지
-    @State private var toastType: AlertMessage.AlertType = .success // 토스트 타입
     @State private var isMenuOpen: Bool = UIDevice.current.userInterfaceIdiom == .phone ? false : true // 메뉴 패널 열림/닫힘 상태 (아이폰: 접힘, 아이패드: 펼침)
     
     // 파일 선택 및 저장 관련 상태
@@ -188,6 +188,7 @@ struct FloatingToolbarView: View {
                                 .onTapGesture {
                                     withAnimation(.easeInOut(duration: 0.1)) {
                                         isMenuOpen = true
+                                        appState.isMenuOpen = true
                                         onMenuStateChange?(true)
                                     }
                                 }
@@ -197,6 +198,7 @@ struct FloatingToolbarView: View {
                             Button(action: {
                                 withAnimation(.easeInOut(duration: 0.1)) {
                                     isMenuOpen = true
+                                    appState.isMenuOpen = true
                                     onMenuStateChange?(true)
                                 }
                             }) {
@@ -245,6 +247,7 @@ struct FloatingToolbarView: View {
             allowsMultipleSelection: false
         ) { result in
             handleFileImport(result: result)
+            onSystemUIActivityChange?(false) // 시스템 UI 비활성화
         }
         // 저장된 프로젝트 목록 sheet
         .sheet(isPresented: $showSaveProjectPrompt) {
@@ -255,6 +258,11 @@ struct FloatingToolbarView: View {
             )
             .environmentObject(appState)
         }
+        .onChange(of: showSaveProjectPrompt) { _, newValue in
+            if !newValue {
+                onSystemUIActivityChange?(false) // 시스템 UI 비활성화
+            }
+        }
         // 프로젝트 열기 sheet
         .sheet(isPresented: $showSavedProjectList) {
             SavedProjectListView(
@@ -263,6 +271,11 @@ struct FloatingToolbarView: View {
                 photo2: photo2
             )
             .environmentObject(appState)
+        }
+        .onChange(of: showSavedProjectList) { _, newValue in
+            if !newValue {
+                onSystemUIActivityChange?(false) // 시스템 UI 비활성화
+            }
         }
     }
     
@@ -282,6 +295,7 @@ struct FloatingToolbarView: View {
                     .preference(key: ViewPreferenceKeys.ToolbarFrameKey.self, value: geo.frame(in: .named("CanvasSpace")))
             }
         )
+
     }
     
     // MARK: - Sub Views
@@ -310,6 +324,7 @@ struct FloatingToolbarView: View {
                 withAnimation(.easeInOut(duration: 0.1)) {
                     selectedMenu = nil
                     isMenuOpen = false
+                    appState.isMenuOpen = false
                     onClosePopupMenus?()
                     onMenuStateChange?(false)
                 }
@@ -482,9 +497,6 @@ struct FloatingToolbarView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .padding(.top, getSafeAreaInsets().top + 10) // 아이패드 툴바를 10픽셀 위로
         .overlay(ipadSubmenuOverlay)
-        .overlay(
-            CenterToastView(message: toastMessage, type: toastType.toCenterToastType, isVisible: $showToast)
-        )
     }
     
     /// 아이패드용 상단 툴바 버튼
@@ -635,12 +647,10 @@ struct FloatingToolbarView: View {
                     await loadProjectManually(from: url)
                 }
             } else {
-                showToast = true
-                toastMessage = "선택된 파일이 없습니다."
+                appState.showToastMessage("선택된 파일이 없습니다.", type: .warning)
             }
         case .failure(let error):
-            showToast = true
-            toastMessage = "파일 가져오기 실패: \(error.localizedDescription)"
+            appState.showToastMessage("파일 가져오기 실패: \(error.localizedDescription)", type: .error)
         }
     }
     
@@ -650,8 +660,7 @@ struct FloatingToolbarView: View {
         // 기존 함수 사용
         loadProjectFromArchive(from: url, photo1: photo1, photo2: photo2)
         
-        showToast = true
-        toastMessage = "프로젝트가 성공적으로 로드되었습니다."
+        appState.showToastMessage("프로젝트가 성공적으로 로드되었습니다.")
     }
     
     /// Safe Area Insets 가져오기
@@ -669,6 +678,11 @@ struct FloatingToolbarView: View {
         )
     }
     
+    /// 사진 선택 상태 확인
+    private var hasSelectedPhotos: Bool {
+        return photo1.originalImage != nil || photo2.originalImage != nil
+    }
+    
     /// 메뉴 아이템 생성
     /// - Parameter menuType: 메뉴 타입
     /// - Returns: 메뉴 아이템 배열
@@ -682,30 +696,38 @@ struct FloatingToolbarView: View {
                     photo2.originalImage = nil
                     topLoader1.detach()
                     topLoader2.detach()
-                    showToast = true
-                    toastMessage = "새 프로젝트가 생성되었습니다."
+                    appState.showToastMessage("새 프로젝트가 생성되었습니다.")
                 }),
                 MenuItem(title: "프로젝트 열기", icon: "folder", action: { 
                     // 프로젝트 열기 - 저장된 프로젝트 목록에서 선택
                     showSavedProjectList = true
+                    onSystemUIActivityChange?(true) // 시스템 UI 활성화
                 }),
                 MenuItem(title: "파일에서 직접 열기", icon: "folder.badge.plus", action: { 
                     // 파일에서 직접 열기 - 파일 선택기 열기
                     isFileImporterPresented = true
+                    onSystemUIActivityChange?(true) // 시스템 UI 활성화
                 }),
                 MenuItem(title: "저장", icon: "square.and.arrow.down", action: { 
-                    // 저장
+                    // 저장 - 사진 선택 확인
+                    if !hasSelectedPhotos {
+                        appState.showToastMessage("사진을 먼저 선택해주세요.", type: .warning)
+                        return
+                    }
                     if let _ = saveProject(photo1: photo1, photo2: photo2) {
-                        showToast = true
-                        toastMessage = "프로젝트가 저장되었습니다."
+                                            appState.showToastMessage("프로젝트가 저장되었습니다.")
                     } else {
-                        showToast = true
-                        toastMessage = "저장에 실패했습니다."
+                        appState.showToastMessage("저장에 실패했습니다.", type: .error)
                     }
                 }),
                 MenuItem(title: "새 이름으로 저장", icon: "square.and.pencil", action: { 
-                    // 새 이름으로 저장 - SaveProjectPrompt 열기
+                    // 새 이름으로 저장 - 사진 선택 확인
+                    if !hasSelectedPhotos {
+                        appState.showToastMessage("사진을 먼저 선택해주세요.", type: .warning)
+                        return
+                    }
                     showSaveProjectPrompt = true
+                    onSystemUIActivityChange?(true) // 시스템 UI 활성화
                 })
             ]
         case .photocard:
@@ -714,20 +736,19 @@ struct FloatingToolbarView: View {
                     // 사진 불러오기
                     photoPickerMode = .전체
                     showPhotoPicker = true
+                    onSystemUIActivityChange?(true) // 시스템 UI 활성화
                 }),
                 MenuItem(title: "편집 초기화", icon: "arrow.counterclockwise", action: { 
                     // 편집 초기화
                     photo1.reset()
                     photo2.reset()
-                    showToast = true
-                    toastMessage = "편집이 초기화되었습니다."
+                    appState.showToastMessage("편집이 초기화되었습니다.")
                 }),
                 MenuItem(title: "사진 복제", icon: "plus.square.on.square", action: { 
                     // 사진 복제
                     if let image1 = photo1.originalImage {
                         photo2.originalImage = image1
-                        showToast = true
-                        toastMessage = "사진이 복제되었습니다."
+                        appState.showToastMessage("사진이 복제되었습니다.")
                     }
                 }),
                 MenuItem(title: "좌우 사진 바꾸기", icon: "arrow.left.arrow.right", action: { 
@@ -747,17 +768,16 @@ struct FloatingToolbarView: View {
                     photo2.offset = tempOffset
                     photo2.coverScale = tempCoverScale
                     
-                    showToast = true
-                    toastMessage = "좌우 사진이 바뀌었습니다."
+                    appState.showToastMessage("좌우 사진이 바뀌었습니다.")
                 })
             ]
         case .toploader:
             return [
-                MenuItem(title: "왼쪽 탑로더 관리", icon: "square.grid.2x2", action: { 
+                MenuItem(title: "왼쪽 탑로더 관리", icon: "square.lefthalf.filled", action: { 
                     // 왼쪽 탑로더 관리
                     showTopLoader1ContextMenu = true
                 }),
-                MenuItem(title: "오른쪽 탑로더 관리", icon: "square.grid.2x2", action: { 
+                MenuItem(title: "오른쪽 탑로더 관리", icon: "square.righthalf.filled", action: { 
                     // 오른쪽 탑로더 관리
                     showTopLoader2ContextMenu = true
                 }),
@@ -765,16 +785,14 @@ struct FloatingToolbarView: View {
                     // 탑로더 복제
                     if topLoader1.showTopLoader {
                         topLoader2.copyFrom(topLoader1)
-                        showToast = true
-                        toastMessage = "탑로더가 복제되었습니다."
+                        appState.showToastMessage("탑로더가 복제되었습니다.")
                     }
                 }),
                 MenuItem(title: "탑로더 모두 제거", icon: "xmark.circle", action: {
                     // 탑로더 모두 제거
                     topLoader1.detach()
                     topLoader2.detach()
-                    showToast = true
-                    toastMessage = "탑로더가 모두 제거되었습니다."
+                    appState.showToastMessage("탑로더가 모두 제거되었습니다.")
                 })
             ]
         case .view:
@@ -782,41 +800,47 @@ struct FloatingToolbarView: View {
                 MenuItem(title: "커팅선 보기/가리기", icon: "rectangle.dashed", action: { 
                     // 커팅선 보기/가리기
                     showSafeFrame.toggle()
-                    showToast = true
-                    toastMessage = showSafeFrame ? "커팅선이 표시됩니다." : "커팅선이 숨겨집니다."
+                    appState.showToastMessage(showSafeFrame ? "커팅선이 표시됩니다." : "커팅선이 숨겨집니다.")
                 }),
                 MenuItem(title: "탑로더 보기/가리기", icon: "eye", action: { 
                     // 탑로더 보기/가리기
                     topLoader1.showTopLoader.toggle()
                     topLoader2.showTopLoader.toggle()
-                    showToast = true
-                    toastMessage = topLoader1.showTopLoader ? "탑로더가 표시됩니다." : "탑로더가 숨겨집니다."
+                    appState.showToastMessage(topLoader1.showTopLoader ? "탑로더가 표시됩니다." : "탑로더가 숨겨집니다.")
                 })
             ]
         case .export:
             return [
                 MenuItem(title: "바로 인쇄하기", icon: "printer", action: { 
-                    // 바로 인쇄하기 - 실제 인쇄 기능 실행
+                    // 바로 인쇄하기 - 사진 선택 확인
+                    if !hasSelectedPhotos {
+                        appState.showToastMessage("사진을 먼저 선택해주세요.", type: .warning)
+                        return
+                    }
                     let combinedImage = ExportManager.renderCombinedImage(photo1: photo1, photo2: photo2)
                     PhotoExportHelper.printImage(combinedImage)
-                    showToast = true
-                    toastMessage = "인쇄 대화상자가 열렸습니다."
+                    appState.showToastMessage("인쇄 대화상자가 열렸습니다.")
                 }),
                 MenuItem(title: "사진으로 내보내기", icon: "photo", action: { 
-                    // 사진으로 내보내기 - 실제 사진 앱에 저장
+                    // 사진으로 내보내기 - 사진 선택 확인
+                    if !hasSelectedPhotos {
+                        appState.showToastMessage("사진을 먼저 선택해주세요.", type: .warning)
+                        return
+                    }
                     let combinedImage = ExportManager.renderCombinedImage(photo1: photo1, photo2: photo2)
                     ExportManager.saveToPhotos(combinedImage)
-                    showToast = true
-                    toastMessage = "포토카드가 사진 앱에 저장되었습니다."
+                    appState.showToastMessage("포토카드가 사진 앱에 저장되었습니다.")
                 }),
                 MenuItem(title: "파일로 내보내기", icon: "tray.and.arrow.down", action: { 
-                    // 파일로 내보내기 - 현재 프로젝트를 .pfp 파일로 저장
+                    // 파일로 내보내기 - 사진 선택 확인
+                    if !hasSelectedPhotos {
+                        appState.showToastMessage("사진을 먼저 선택해주세요.", type: .warning)
+                        return
+                    }
                     if let savedURL = saveProjectAsArchive(photo1: photo1, photo2: photo2) {
-                        showToast = true
-                        toastMessage = "프로젝트가 저장되었습니다: \(savedURL.lastPathComponent)"
+                        appState.showToastMessage("프로젝트가 저장되었습니다: \(savedURL.lastPathComponent)")
                     } else {
-                        showToast = true
-                        toastMessage = "프로젝트 저장에 실패했습니다."
+                        appState.showToastMessage("프로젝트 저장에 실패했습니다.", type: .error)
                     }
                 })
             ]

@@ -31,8 +31,7 @@ struct PhotoEditorView: View {
     @State private var selectedBoxIndex: Int? = nil
     @State private var photoPickerMode: PhotoPickerMode = .전체
     @State private var showAlreadySelectedAlert = false
-    @State private var showToast: Bool = false
-    @State private var toastMessage: String = ""
+
     @Binding var showContextMenu: Bool
     @Binding var selectedMenu: MenuType?
     @Binding var showTopLoader1ContextMenu: Bool?
@@ -43,6 +42,7 @@ struct PhotoEditorView: View {
     @State private var selectedTextId: UUID? = nil
     @State private var selectedStickerId: UUID? = nil
     @State private var objectMenuPosition: CGPoint = .zero
+    var onSystemUIActivityChange: ((Bool) -> Void)? = nil // 시스템 UI 활성화 상태 변경 콜백
     
     // 컨텍스트 메뉴 타입을 정의
     enum ContextMenuType: Equatable {
@@ -265,8 +265,7 @@ struct PhotoEditorView: View {
                         print("[DEBUG] 🔥 탑로더2 메뉴 열림")
                     }
                 },
-                showToast: $showToast,
-                toastMessage: $toastMessage,
+
                 selectedMenu: $selectedMenu,
                 showContextMenu: $showContextMenu,
                 showTopLoader1ContextMenu: Binding(
@@ -339,16 +338,14 @@ struct PhotoEditorView: View {
             let onReset: () -> Void = {
                 if boxIndex == 1 { photo1.reset() }
                 else { photo2.reset() }
-                showToast = true
-                toastMessage = "편집이 초기화되었습니다."
+                appState.showToastMessage("편집이 초기화되었습니다.")
                 showContextMenu = false
                 activeContextMenu = nil
             }
             let onDuplicate: () -> Void = {
                 if boxIndex == 1 { duplicatePhoto(from: photo1, to: photo2) }
                 else { duplicatePhoto(from: photo2, to: photo1) }
-                showToast = true
-                toastMessage = "사진이 복제되었습니다."
+                appState.showToastMessage("사진이 복제되었습니다.")
                 showContextMenu = false
                 activeContextMenu = nil
             }
@@ -360,8 +357,7 @@ struct PhotoEditorView: View {
             let onDelete: () -> Void = {
                 if boxIndex == 1 { photo1.originalImage = nil }
                 else { photo2.originalImage = nil }
-                showToast = true
-                toastMessage = "사진이 삭제되었습니다."
+                appState.showToastMessage("사진이 삭제되었습니다.")
                 showContextMenu = false
                 activeContextMenu = nil
             }
@@ -417,10 +413,7 @@ struct PhotoEditorView: View {
                     .zIndex(9999)
                     .allowsHitTesting(true)
                 }
-                if showToast {
-                    CenterToastView(message: toastMessage, type: .success, isVisible: $showToast)
-                        .position(x: geo.size.width / 2 + (UIDevice.current.userInterfaceIdiom == .phone && isMenuOpen ? 60 : 0), y: geo.size.height / 2) // 아이폰에서 메뉴가 열렸을 때 더 오른쪽으로 이동
-                }
+
                 
                 // 탑로더 1 컨텍스트 메뉴
                 if showTopLoader1ContextMenu == true {
@@ -433,24 +426,20 @@ struct PhotoEditorView: View {
                         canvasFrame: canvasFrame,
                         onTextAdd: { 
                             topLoader1.addText("", fontSize: 32, textColor: .black, style: .plain, strokeColor: .clear, boxSize: baseBoxSize)
-                            showToast = true
-                            toastMessage = "텍스트가 추가되었습니다."
+                            appState.showToastMessage("텍스트가 추가되었습니다.")
                         },
                         onManage: { /* 탑로더 관리 로직 */ },
                         onSave: { 
                             topLoader1.saveTopLoader(name: "내 탑로더 \(Date().formatted(date: .numeric, time: .shortened))")
-                            showToast = true
-                            toastMessage = "탑로더가 저장되었습니다."
+                            appState.showToastMessage("탑로더가 저장되었습니다.")
                         },
                         onToggleVisibility: { 
                             topLoader1.showTopLoader.toggle()
-                            showToast = true
-                            toastMessage = topLoader1.showTopLoader ? "탑로더가 표시됩니다." : "탑로더가 숨겨집니다."
+                            appState.showToastMessage(topLoader1.showTopLoader ? "탑로더가 표시됩니다." : "탑로더가 숨겨집니다.")
                         },
                         onRemove: { 
                             topLoader1.detach()
-                            showToast = true
-                            toastMessage = "탑로더가 제거되었습니다."
+                            appState.showToastMessage("탑로더가 제거되었습니다.")
                         },
                         isVisible: topLoader1.showTopLoader
                     )
@@ -469,24 +458,20 @@ struct PhotoEditorView: View {
                         canvasFrame: canvasFrame,
                         onTextAdd: { 
                             topLoader2.addText("", fontSize: 32, textColor: .black, style: .plain, strokeColor: .clear, boxSize: baseBoxSize)
-                            showToast = true
-                            toastMessage = "텍스트가 추가되었습니다."
+                            appState.showToastMessage("텍스트가 추가되었습니다.")
                         },
                         onManage: { /* 탑로더 관리 로직 */ },
                         onSave: { 
                             topLoader2.saveTopLoader(name: "내 탑로더 \(Date().formatted(date: .numeric, time: .shortened))")
-                            showToast = true
-                            toastMessage = "탑로더가 저장되었습니다."
+                            appState.showToastMessage("탑로더가 저장되었습니다.")
                         },
                         onToggleVisibility: { 
                             topLoader2.showTopLoader.toggle()
-                            showToast = true
-                            toastMessage = topLoader2.showTopLoader ? "탑로더가 표시됩니다." : "탑로더가 숨겨집니다."
+                            appState.showToastMessage(topLoader2.showTopLoader ? "탑로더가 표시됩니다." : "탑로더가 숨겨집니다.")
                         },
                         onRemove: { 
                             topLoader2.detach()
-                            showToast = true
-                            toastMessage = "탑로더가 제거되었습니다."
+                            appState.showToastMessage("탑로더가 제거되었습니다.")
                         },
                         isVisible: topLoader2.showTopLoader
                     )
@@ -586,7 +571,8 @@ struct PhotoEditorView: View {
                     },
                     onMenuStateChange: { isOpen in
                         isMenuOpen = isOpen
-                    }
+                    },
+                    onSystemUIActivityChange: onSystemUIActivityChange
                 )
             }
             .background(
@@ -700,7 +686,15 @@ struct PhotoEditorView: View {
                     }
                 }
                 showPhotoPicker = false
+                // 사진 선택기가 닫힐 때는 항상 시스템 UI 비활성화
+                onSystemUIActivityChange?(false)
             }
+        }
+        .onChange(of: showPhotoPicker) { _, newValue in
+            if newValue {
+                onSystemUIActivityChange?(true) // 사진 선택기 열릴 때 시스템 UI 활성화
+            }
+            // 사진 선택기가 닫힐 때는 실제 사진 선택 여부에 따라 시스템 UI 상태 결정
         }
         .alert("사진이 이미 선택되어있습니다", isPresented: $showAlreadySelectedAlert) {
             Button("확인", role: .cancel) {}
@@ -754,8 +748,7 @@ struct PhotoEditorView: View {
         photo2.coverScale = cover1
         
         // 토스트 메시지 표시
-        showToast = true
-        toastMessage = "좌우 사진이 바뀌었습니다."
+        appState.showToastMessage("좌우 사진이 바뀌었습니다.")
     }
     
     private func duplicatePhoto(from: PhotoState, to: PhotoState) {
