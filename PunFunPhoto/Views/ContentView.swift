@@ -26,6 +26,7 @@ struct ContentView: View {
     @State private var photoPickerMode: PhotoPickerMode = .전체
     @State private var showAlreadySelectedAlert: Bool = false
     @State private var selectedMenu: MenuType? = nil
+    @State private var isMenuOpen = false
     
     // 메뉴 전환을 관리하는 함수들
     private func openPhotoCardMenu() {
@@ -88,13 +89,11 @@ struct ContentView: View {
                             .foregroundColor(.white)
                             .multilineTextAlignment(.center)
                             .padding(.horizontal, 24)
-                        Text("포토카드를 저장하거나 불러올때는 세로로 가능합니다.")
-                            .font(.footnote)
-                            .foregroundColor(.gray)
-                            .padding(.top, 4)
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .background(Color(red: 126/255, green: 98/255, blue: 214/255, opacity: 0.5)) // RGB(126, 98, 214)에 50% 투명도
                     .position(x: rootGeo.size.width / 2, y: rootGeo.size.height / 2)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
                 } else {
                     ZStack {
                         PhotoEditorView(
@@ -104,6 +103,7 @@ struct ContentView: View {
                             topLoader1: topLoader1,
                             topLoader2: topLoader2,
                             showPhotoPicker: $showPhotoPicker,
+                            isMenuOpen: $isMenuOpen,
                             showContextMenu: $showContextMenu,
                             selectedMenu: $selectedMenu,
                             showTopLoader1ContextMenu: $showTopLoader1ContextMenu,

@@ -15,6 +15,7 @@ struct PhotoEditorView: View {
     @ObservedObject var topLoader1: TopLoaderState
     @ObservedObject var topLoader2: TopLoaderState
     @Binding var showPhotoPicker: Bool
+    @Binding var isMenuOpen: Bool
     @State private var canvasFrame: CGRect = .zero
     @State private var showPicker1 = false
     @State private var showPicker2 = false
@@ -74,6 +75,8 @@ struct PhotoEditorView: View {
         showTopLoader1ContextMenu = nil
         showTopLoader2ContextMenu = nil
         showObjectMenu = false
+        activeContextMenu = nil // activeContextMenu도 초기화
+        contextMenuTargetBoxIndex = nil // contextMenuTargetBoxIndex도 초기화
     }
     
     private func closeTopMenuOnly() {
@@ -336,12 +339,16 @@ struct PhotoEditorView: View {
             let onReset: () -> Void = {
                 if boxIndex == 1 { photo1.reset() }
                 else { photo2.reset() }
+                showToast = true
+                toastMessage = "편집이 초기화되었습니다."
                 showContextMenu = false
                 activeContextMenu = nil
             }
             let onDuplicate: () -> Void = {
                 if boxIndex == 1 { duplicatePhoto(from: photo1, to: photo2) }
                 else { duplicatePhoto(from: photo2, to: photo1) }
+                showToast = true
+                toastMessage = "사진이 복제되었습니다."
                 showContextMenu = false
                 activeContextMenu = nil
             }
@@ -353,6 +360,8 @@ struct PhotoEditorView: View {
             let onDelete: () -> Void = {
                 if boxIndex == 1 { photo1.originalImage = nil }
                 else { photo2.originalImage = nil }
+                showToast = true
+                toastMessage = "사진이 삭제되었습니다."
                 showContextMenu = false
                 activeContextMenu = nil
             }
@@ -361,15 +370,15 @@ struct PhotoEditorView: View {
                 Color.clear // 모든 디바이스에서 배경색을 상위 뷰에서 처리
                 VStack {
                     Spacer()
-                        .frame(height: UIDevice.current.userInterfaceIdiom == .phone ? 30 : 20) // 전체 화면을 10픽셀 더 내림
+                        .frame(height: UIDevice.current.userInterfaceIdiom == .phone ? 40 : 20) // 상단 여백을 40픽셀로 통일
                     mainCanvas(scaleFactor: scaleFactor)
-                        .padding(.horizontal, 20) // 좌우 여백 추가
-                        .padding(.vertical, 15)   // 상하 여백을 5픽셀 줄여서 캔버스를 위로 올림
+                        .padding(.horizontal, 20) // 기본 좌우 여백
+                        .padding(.vertical, 15) // 기본 상하 여백
                     Spacer()
-                        .frame(height: UIDevice.current.userInterfaceIdiom == .phone ? 70 : 30) // 아래쪽 여백 증가
+                        .frame(height: UIDevice.current.userInterfaceIdiom == .phone ? 70 : 30) // 하단 여백 통일
                 }
                 .frame(maxWidth: .infinity)
-                .offset(x: selectedMenu != nil ? 50 : 0) // 메뉴가 열릴 때 오른쪽으로 이동
+                .offset(x: UIDevice.current.userInterfaceIdiom == .phone && isMenuOpen ? 80 : 0) // 메뉴가 열렸을 때 오른쪽으로 이동
                 .zIndex(0)
                 
 
@@ -410,6 +419,7 @@ struct PhotoEditorView: View {
                 }
                 if showToast {
                     CenterToastView(message: toastMessage, type: .success, isVisible: $showToast)
+                        .position(x: geo.size.width / 2 + (UIDevice.current.userInterfaceIdiom == .phone && isMenuOpen ? 60 : 0), y: geo.size.height / 2) // 아이폰에서 메뉴가 열렸을 때 더 오른쪽으로 이동
                 }
                 
                 // 탑로더 1 컨텍스트 메뉴
@@ -421,14 +431,22 @@ struct PhotoEditorView: View {
                         },
                         targetFrame: boxFrames[1] ?? .zero,
                         canvasFrame: canvasFrame,
-                        onTextAdd: { topLoader1.addText("", fontSize: 32, textColor: .black, style: .plain, strokeColor: .clear, boxSize: baseBoxSize) },
+                        onTextAdd: { 
+                            topLoader1.addText("", fontSize: 32, textColor: .black, style: .plain, strokeColor: .clear, boxSize: baseBoxSize)
+                            showToast = true
+                            toastMessage = "텍스트가 추가되었습니다."
+                        },
                         onManage: { /* 탑로더 관리 로직 */ },
                         onSave: { 
                             topLoader1.saveTopLoader(name: "내 탑로더 \(Date().formatted(date: .numeric, time: .shortened))")
                             showToast = true
                             toastMessage = "탑로더가 저장되었습니다."
                         },
-                        onToggleVisibility: { topLoader1.showTopLoader.toggle() },
+                        onToggleVisibility: { 
+                            topLoader1.showTopLoader.toggle()
+                            showToast = true
+                            toastMessage = topLoader1.showTopLoader ? "탑로더가 표시됩니다." : "탑로더가 숨겨집니다."
+                        },
                         onRemove: { 
                             topLoader1.detach()
                             showToast = true
@@ -449,14 +467,22 @@ struct PhotoEditorView: View {
                         },
                         targetFrame: boxFrames[2] ?? .zero,
                         canvasFrame: canvasFrame,
-                        onTextAdd: { topLoader2.addText("", fontSize: 32, textColor: .black, style: .plain, strokeColor: .clear, boxSize: baseBoxSize) },
+                        onTextAdd: { 
+                            topLoader2.addText("", fontSize: 32, textColor: .black, style: .plain, strokeColor: .clear, boxSize: baseBoxSize)
+                            showToast = true
+                            toastMessage = "텍스트가 추가되었습니다."
+                        },
                         onManage: { /* 탑로더 관리 로직 */ },
                         onSave: { 
                             topLoader2.saveTopLoader(name: "내 탑로더 \(Date().formatted(date: .numeric, time: .shortened))")
                             showToast = true
                             toastMessage = "탑로더가 저장되었습니다."
                         },
-                        onToggleVisibility: { topLoader2.showTopLoader.toggle() },
+                        onToggleVisibility: { 
+                            topLoader2.showTopLoader.toggle()
+                            showToast = true
+                            toastMessage = topLoader2.showTopLoader ? "탑로더가 표시됩니다." : "탑로더가 숨겨집니다."
+                        },
                         onRemove: { 
                             topLoader2.detach()
                             showToast = true
@@ -557,6 +583,9 @@ struct PhotoEditorView: View {
                         showTopLoader2ContextMenu = nil
                         showObjectMenu = false
                         activeContextMenu = nil  // 활성 컨텍스트 메뉴 상태도 초기화
+                    },
+                    onMenuStateChange: { isOpen in
+                        isMenuOpen = isOpen
                     }
                 )
             }
@@ -723,6 +752,10 @@ struct PhotoEditorView: View {
         photo2.scale = scale1
         photo2.offset = offset1
         photo2.coverScale = cover1
+        
+        // 토스트 메시지 표시
+        showToast = true
+        toastMessage = "좌우 사진이 바뀌었습니다."
     }
     
     private func duplicatePhoto(from: PhotoState, to: PhotoState) {
@@ -747,6 +780,7 @@ struct PhotoEditorView: View {
         topLoader1: TopLoaderState(),
         topLoader2: TopLoaderState(),
         showPhotoPicker: .constant(false),
+        isMenuOpen: .constant(false),
         showContextMenu: .constant(false),
         selectedMenu: .constant(nil),
         showTopLoader1ContextMenu: .constant(false as Bool?),
