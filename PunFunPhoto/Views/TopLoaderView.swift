@@ -2,6 +2,131 @@ import SwiftUI
 import UniformTypeIdentifiers
 //import ZipArchive
 
+// 텍스트 컨텍스트 메뉴
+struct TextContextMenuOverlay: View {
+    let onDismiss: () -> Void
+    let onEdit: () -> Void
+    let onMove: () -> Void
+    let onDelete: () -> Void
+    
+    private var menuWidth: CGFloat { 200 }
+    private var menuHeight: CGFloat { 120 }
+    
+    var body: some View {
+        VStack(spacing: 0) {
+            Button(action: {
+                onEdit()
+                onDismiss()
+            }) {
+                Label("편집", systemImage: "pencil")
+                    .font(.system(size: 16, weight: .medium))
+                    .foregroundColor(.primary)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 10)
+                    .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
+            }
+            Divider().padding(.horizontal, 12)
+            Button(action: {
+                onMove()
+                onDismiss()
+            }) {
+                Label("이동", systemImage: "hand.draw")
+                    .font(.system(size: 16, weight: .medium))
+                    .foregroundColor(.primary)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 10)
+                    .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
+            }
+            Divider().padding(.horizontal, 12)
+            Button(action: {
+                onDelete()
+                onDismiss()
+            }) {
+                Label("삭제", systemImage: "trash")
+                    .font(.system(size: 16, weight: .medium))
+                    .foregroundColor(.red)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 10)
+                    .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
+            }
+        }
+        .frame(width: menuWidth, height: menuHeight)
+        .background(Color(uiColor: .systemBackground))
+        .cornerRadius(8)
+        .shadow(radius: 10)
+        .fixedSize(horizontal: true, vertical: false)
+    }
+}
+
+// 스티커 컨텍스트 메뉴
+struct StickerContextMenuOverlay: View {
+    let onDismiss: () -> Void
+    let onMove: () -> Void
+    let onRotate: () -> Void
+    let onResize: () -> Void
+    let onDelete: () -> Void
+    
+    private var menuWidth: CGFloat { 200 }
+    private var menuHeight: CGFloat { 160 }
+    
+    var body: some View {
+        VStack(spacing: 0) {
+            Button(action: {
+                onMove()
+                onDismiss()
+            }) {
+                Label("이동", systemImage: "hand.draw")
+                    .font(.system(size: 16, weight: .medium))
+                    .foregroundColor(.primary)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 10)
+                    .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
+            }
+            Divider().padding(.horizontal, 12)
+            Button(action: {
+                onRotate()
+                onDismiss()
+            }) {
+                Label("회전", systemImage: "rotate.3d")
+                    .font(.system(size: 16, weight: .medium))
+                    .foregroundColor(.primary)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 10)
+                    .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
+            }
+            Divider().padding(.horizontal, 12)
+            Button(action: {
+                onResize()
+                onDismiss()
+            }) {
+                Label("크기 조절", systemImage: "arrow.up.left.and.arrow.down.right")
+                    .font(.system(size: 16, weight: .medium))
+                    .foregroundColor(.primary)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 10)
+                    .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
+            }
+            Divider().padding(.horizontal, 12)
+            Button(action: {
+                onDelete()
+                onDismiss()
+            }) {
+                Label("삭제", systemImage: "trash")
+                    .font(.system(size: 16, weight: .medium))
+                    .foregroundColor(.red)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 10)
+                    .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
+            }
+        }
+        .frame(width: menuWidth, height: menuHeight)
+        .background(Color(uiColor: .systemBackground))
+        .cornerRadius(8)
+        .shadow(radius: 10)
+        .fixedSize(horizontal: true, vertical: false)
+    }
+}
+
 // 컨텍스트 메뉴 스타일을 위한 ViewModifier
 private struct ContextMenuLabelStyle: ViewModifier {
     let isDestructive: Bool
@@ -45,7 +170,10 @@ struct TopLoaderView: View {
     @Binding var selectedMenu: MenuType?
     @Binding var showTopLoaderContextMenu: Bool?
     @State private var showTopLoaderLibrary = false
-    @State private var showContextMenu: Bool = false
+    @State private var showTextContextMenu: Bool = false
+    @State private var showStickerContextMenu: Bool = false
+    @State private var showSFSymbolsPicker: Bool = false
+    @State private var contextMenuTargetId: UUID? = nil
     @State private var showSaveDialog = false
     @State private var newTopLoaderName = ""
     @State private var lastEmptyTapPosition: CGPoint
@@ -90,15 +218,13 @@ struct TopLoaderView: View {
                         ZStack {
                                                     // 탑로더 터치 영역 (실제 컨텐츠가 있는 영역만)
                         if state.isAttached && state.showTopLoader {
-                            // 실제 탑로더 컨텐츠가 있을 때만 터치 영역 활성화
-                            // 스티커와 텍스트가 없는 빈 공간만 터치 가능하도록 설정
+                            // 탑로더 빈 공간 터치 영역
                             Color.clear
                                 .contentShape(Rectangle())
                                 .frame(width: boxSize.width, height: boxSize.height)
                                 .zIndex(50) // 스티커와 텍스트보다 낮게 설정
-                                .allowsHitTesting(true)
                                 .onTapGesture {
-                                    print("[DEBUG] 탑로더 터치 영역 감지됨")
+                                    print("[DEBUG] 탑로더 빈 공간 터치 영역 감지됨")
                                     // 다른 메뉴들을 먼저 닫기
                                     onTopLoaderTapped?()
                                     selectedMenu = nil
@@ -109,6 +235,8 @@ struct TopLoaderView: View {
                                         print("[DEBUG] 탑로더 메뉴 닫힘")
                                     } else {
                                         showTopLoaderContextMenu = true
+                                        // 메뉴 위치를 박스 중앙으로 설정
+                                        contextMenuPosition = CGPoint(x: boxSize.width / 2, y: boxSize.height / 2)
                                         print("[DEBUG] 탑로더 메뉴 열림 - 중앙 위치")
                                     }
                                     showObjectMenu = false
@@ -127,7 +255,7 @@ struct TopLoaderView: View {
                                 ForEach(state.texts, id: \.id) { textItem in
                                     textView(for: textItem, geometry: geometry)
                                         .contentShape(Rectangle())
-                                        .zIndex(200) // 스티커보다 높게 설정
+                                        .zIndex(300) // 탑로더 터치 영역보다 높게 설정
                                 }
                             }
                         }
@@ -139,13 +267,10 @@ struct TopLoaderView: View {
                 if showContextMenu && !showObjectMenu {
                     // [탑로더] 메뉴만!
                     let menuWidth: CGFloat = 220
-                    let menuHeight: CGFloat = 200
-                    let minX = menuWidth / 2
-                    let maxX = boxSize.width - menuWidth / 2
-                    let minY = menuHeight / 2
-                    let maxY = boxSize.height - menuHeight / 2
-                    let clampedX = min(max(contextMenuPosition.x, minX), maxX)
-                    let clampedY = min(max(contextMenuPosition.y, minY), maxY)
+                    let menuHeight: CGFloat = 350
+                    // 박스 중앙에 메뉴 위치 고정
+                    let menuX = boxSize.width / 2
+                    let menuY = boxSize.height / 2
                     ZStack {
                         Color.black.opacity(0.001)
                             .onTapGesture {
@@ -171,21 +296,29 @@ struct TopLoaderView: View {
                                     showTextEditor = true
                                     showContextMenu = false
                                 }) {
-                                    Label("[탑로더] 텍스트 추가", systemImage: "text.badge.plus")
+                                    Label("텍스트 추가", systemImage: "text.badge.plus")
+                                        .contextMenuLabelStyle()
+                                }
+                                Divider().padding(.horizontal, 12)
+                                Button(action: {
+                                    showSFSymbolsPicker = true
+                                    showContextMenu = false
+                                }) {
+                                    Label("SF Symbols 추가", systemImage: "square.grid.3x3")
                                         .contextMenuLabelStyle()
                                 }
                                 Divider().padding(.horizontal, 12)
                                 Button(action: {
                                     showTopLoaderLibrary = true
                                 }) {
-                                    Label("[탑로더] 탑로더 관리", systemImage: "rectangle.stack.badge.plus")
+                                    Label("탑로더 관리", systemImage: "rectangle.stack.badge.plus")
                                         .contextMenuLabelStyle()
                                 }
                                 Divider().padding(.horizontal, 12)
                                 Button(action: {
                                     showSaveDialog = true
                                 }) {
-                                    Label("[탑로더] 탑로더 저장", systemImage: "square.and.arrow.down")
+                                    Label("탑로더 저장", systemImage: "square.and.arrow.down")
                                         .contextMenuLabelStyle()
                                 }
                                 Divider().padding(.horizontal, 12)
@@ -199,7 +332,7 @@ struct TopLoaderView: View {
                                     }
                                     print("[DEBUG] 탑로더 가시성 변경: \(state.showTopLoader ? "보임" : "가려짐")")
                                 }) {
-                                    Label(state.showTopLoader ? "[탑로더] 탑로더 가리기" : "[탑로더] 탑로더 보기", systemImage: state.showTopLoader ? "eye.slash" : "eye")
+                                    Label(state.showTopLoader ? "탑로더 가리기" : "탑로더 보기", systemImage: state.showTopLoader ? "eye.slash" : "eye")
                                         .contextMenuLabelStyle()
                                 }
                                 Divider().padding(.horizontal, 12)
@@ -210,7 +343,7 @@ struct TopLoaderView: View {
                                     contextMenuPosition = .zero  // 위치 초기화
                                     print("[DEBUG] 탑로더 제거: detach() 호출됨, 메뉴 상태 초기화")
                                 }) {
-                                    Label("[탑로더] 탑로더 제거", systemImage: "xmark.circle")
+                                    Label("탑로더 제거", systemImage: "xmark.circle")
                                         .contextMenuLabelStyle(isDestructive: true)
                                 }
                             } else {
@@ -218,7 +351,7 @@ struct TopLoaderView: View {
                                     state.attach()
                                     showContextMenu = false
                                 }) {
-                                    Label("[탑로더] 탑로더 관리", systemImage: "rectangle.stack.badge.plus")
+                                    Label("탑로더 관리", systemImage: "rectangle.stack.badge.plus")
                                         .contextMenuLabelStyle()
                                 }
                             }
@@ -233,14 +366,72 @@ struct TopLoaderView: View {
                         .zIndex(1)
                         .allowsHitTesting(true)
                     }
-                    .frame(width: boxSize.width, height: boxSize.height)
-                    .position(x: clampedX, y: clampedY)
+                                            .frame(width: boxSize.width, height: boxSize.height)
+                        .position(x: menuX, y: menuY)
                     .zIndex(9998)
                     .onAppear {
                         print("[DEBUG] 컨텍스트 메뉴 뷰 onAppear, contextMenuPosition=\(contextMenuPosition)")
                     }
                 }
-                // 스티커 메뉴는 PhotoEditorView에서 관리됨
+                
+                // 텍스트 컨텍스트 메뉴
+                if showTextContextMenu, let textId = contextMenuTargetId,
+                   let textItem = state.texts.first(where: { $0.id == textId }) {
+                    TextContextMenuOverlay(
+                        onDismiss: {
+                            showTextContextMenu = false
+                            contextMenuTargetId = nil
+                        },
+                        onEdit: {
+                            state.editingTextItem = textItem
+                            state.selectedItemId = textItem.id
+                            state.showTextEditor = true
+                        },
+                        onMove: {
+                            selectedTextId = textItem.id
+                            state.selectedItemId = textItem.id
+                            appState.showToastMessage("텍스트 이동 모드 활성화")
+                        },
+                        onDelete: {
+                            state.removeText(textItem.id)
+                            appState.showToastMessage("텍스트가 삭제되었습니다")
+                        }
+                    )
+                    .position(contextMenuPosition)
+                    .zIndex(1000)
+                }
+                
+                // 스티커 컨텍스트 메뉴
+                if showStickerContextMenu, let stickerId = contextMenuTargetId,
+                   let sticker = state.stickers.first(where: { $0.id == stickerId }) {
+                    StickerContextMenuOverlay(
+                        onDismiss: {
+                            showStickerContextMenu = false
+                            contextMenuTargetId = nil
+                        },
+                        onMove: {
+                            selectedStickerId = sticker.id
+                            state.selectedItemId = sticker.id
+                            appState.showToastMessage("스티커 이동 모드 활성화")
+                        },
+                        onRotate: {
+                            selectedStickerId = sticker.id
+                            state.selectedItemId = sticker.id
+                            appState.showToastMessage("스티커 회전 모드 활성화")
+                        },
+                        onResize: {
+                            selectedStickerId = sticker.id
+                            state.selectedItemId = sticker.id
+                            appState.showToastMessage("스티커 크기 조절 모드 활성화")
+                        },
+                        onDelete: {
+                            state.removeSticker(sticker.id)
+                            appState.showToastMessage("스티커가 삭제되었습니다")
+                        }
+                    )
+                    .position(contextMenuPosition)
+                    .zIndex(1000)
+                }
             }
             .coordinateSpace(name: "CanvasSpace")
             .overlay(
@@ -256,14 +447,14 @@ struct TopLoaderView: View {
                     showContextMenu = true
                 }
             }
-            .sheet(isPresented: $showTextEditor, onDismiss: {
-                editingTextItem = nil
+            .sheet(isPresented: $state.showTextEditor, onDismiss: {
+                state.editingTextItem = nil
                 showContextMenu = false
                 showObjectMenu = false
             }) {
-                if let editingTextItem = editingTextItem {
+                if let editingTextItem = state.editingTextItem {
                     TextStickerEditorView(
-                        isPresented: $showTextEditor,
+                        isPresented: $state.showTextEditor,
                         initialText: editingTextItem.text,
                         initialFontSize: editingTextItem.fontSize,
                         initialColor: editingTextItem.textColor,
@@ -320,6 +511,12 @@ struct TopLoaderView: View {
                     print("[DEBUG] 탑로더 선택 완료: contextMenuPosition 중앙으로 초기화, attach() 호출됨")
                 }
             }
+            .sheet(isPresented: $showSFSymbolsPicker) {
+                SFSymbolsStickerView(isPresented: $showSFSymbolsPicker) { symbolName in
+                    state.addSFSymbolSticker(symbolName, size: 50, color: .primary, boxSize: boxSize, position: contextMenuPosition)
+                    appState.showToastMessage("SF Symbol 스티커가 추가되었습니다")
+                }
+            }
             .alert("탑로더 저장", isPresented: $showSaveDialog) {
                 TextField("탑로더 이름", text: $newTopLoaderName)
                 Button("취소", role: .cancel) {
@@ -374,7 +571,7 @@ private func textView(for textItem: TextItem, geometry: GeometryProxy) -> some V
             print("[DEBUG] magnificationGesture onEnded")
         }
 
-    TextStickerView(textItem: textItem)
+    TextStickerView(textItem: textItem, isSelected: selectedTextId == textItem.id)
         .position(textItem.position)
         .zIndex(200) // 스티커보다 높게 설정
         .rotationEffect(textItem.rotation, anchor: .center)
@@ -386,16 +583,19 @@ private func textView(for textItem: TextItem, geometry: GeometryProxy) -> some V
         .onTapGesture {
             print("[DEBUG] textView onTapGesture: \(textItem.id)")
             print("[DEBUG] textItem position: \(textItem.position)")
-            onTextTapped?(textItem.id, textItem.position)
+            // 짧은 터치: 텍스트 컨텍스트 메뉴 열기
+            contextMenuTargetId = textItem.id
+            contextMenuPosition = textItem.position
+            showTextContextMenu = true
+            showStickerContextMenu = false
+            showContextMenu = false
         }
-        .onLongPressGesture(minimumDuration: 0.5, maximumDistance: 10) {
+        .onLongPressGesture(minimumDuration: 0.3, maximumDistance: 10) {
             print("[DEBUG] textView onLongPressGesture: \(textItem.id)")
-            editingTextItem = textItem
-            selectedTextId = textItem.id
+            // 길게 터치: 바로 텍스트 편집기 열기
+            state.editingTextItem = textItem
             state.selectedItemId = textItem.id
-            DispatchQueue.main.async {
-                showTextEditor = true
-            }
+            state.showTextEditor = true
         }
 }
 
@@ -424,7 +624,7 @@ private func stickerView(for sticker: StickerItem) -> some View {
             .position(sticker.position)
             .rotationEffect(sticker.rotation)
             .scaleEffect(1/scaleFactor)
-            .zIndex(150) // 탑로더 터치 영역보다 높게, 텍스트보다 낮게
+                                        .zIndex(250) // 탑로더 터치 영역보다 높게, 텍스트보다 낮게
             .contentShape(Rectangle())
             .allowsHitTesting(true)
             .gesture(dragGesture)
@@ -433,7 +633,19 @@ private func stickerView(for sticker: StickerItem) -> some View {
             .onTapGesture {
                 print("[DEBUG] stickerView onTapGesture: \(sticker.id)")
                 print("[DEBUG] sticker position: \(sticker.position)")
-                onStickerTapped?(sticker.id, sticker.position)
+                // 짧은 터치: 스티커 컨텍스트 메뉴 열기
+                contextMenuTargetId = sticker.id
+                contextMenuPosition = sticker.position
+                showStickerContextMenu = true
+                showTextContextMenu = false
+                showContextMenu = false
+            }
+            .onLongPressGesture(minimumDuration: 0.3, maximumDistance: 10) {
+                print("[DEBUG] stickerView onLongPressGesture: \(sticker.id)")
+                // 길게 터치: 바로 이동 모드 활성화
+                selectedStickerId = sticker.id
+                state.selectedItemId = sticker.id
+                appState.showToastMessage("스티커 이동 모드 활성화")
             }
     }
 }

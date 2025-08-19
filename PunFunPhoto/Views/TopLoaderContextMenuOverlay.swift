@@ -5,6 +5,7 @@ struct TopLoaderContextMenuOverlay: View {
     let targetFrame: CGRect
     let canvasFrame: CGRect
     let onTextAdd: () -> Void
+    let onSFSymbolsAdd: () -> Void
     let onManage: () -> Void
     let onSave: () -> Void
     let onToggleVisibility: () -> Void
@@ -25,6 +26,10 @@ struct TopLoaderContextMenuOverlay: View {
                 VStack(spacing: 0) {
                     menuItem(title: "텍스트 추가", systemImage: "textformat", action: {
                         onTextAdd()
+                    })
+                    Divider().padding(.horizontal, 12)
+                    menuItem(title: "SF Symbols 추가", systemImage: "square.grid.3x3", action: {
+                        onSFSymbolsAdd()
                     })
                     Divider().padding(.horizontal, 12)
                     menuItem(title: "탑로더 관리", systemImage: "music.note", action: {

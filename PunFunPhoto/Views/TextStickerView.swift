@@ -16,6 +16,7 @@ struct TextStickerView: View {
     @ObservedObject var textItem: TextItem
     @StateObject private var fontManager = FontManager.shared
     @State private var fontLoadingState: FontLoadingState = .notLoaded
+    var isSelected: Bool = false
     
     var body: some View {
         Group {
@@ -25,6 +26,18 @@ struct TextStickerView: View {
                 styledText(using: .system(size: textItem.fontSize))
             }
         }
+        .overlay(
+            // 선택된 텍스트에 테두리 표시
+            RoundedRectangle(cornerRadius: 4)
+                .stroke(isSelected ? Color.blue : Color.clear, lineWidth: 2)
+                .padding(-4)
+        )
+        .background(
+            // 선택된 텍스트에 배경 표시
+            RoundedRectangle(cornerRadius: 4)
+                .fill(isSelected ? Color.blue.opacity(0.1) : Color.clear)
+                .padding(-4)
+        )
     }
     
     private func fontLoadableText(_ fontInfo: FontInfo) -> some View {
@@ -311,7 +324,10 @@ struct TextStickerEditorView: View {
         NavigationView {
             Form {
                 Section(header: Text("텍스트")) {
-                    TextField("텍스트를 입력하세요", text: $text)
+                    TextEditor(text: $text)
+                        .frame(minHeight: 100)
+                        .textInputAutocapitalization(.sentences)
+                        .disableAutocorrection(false)
                 }
                 
                 Section(header: Text("폰트")) {

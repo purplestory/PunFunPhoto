@@ -42,6 +42,7 @@ struct PhotoEditorView: View {
     @State private var selectedTextId: UUID? = nil
     @State private var selectedStickerId: UUID? = nil
     @State private var objectMenuPosition: CGPoint = .zero
+    @State private var showSFSymbolsPicker: Bool = false
     var onSystemUIActivityChange: ((Bool) -> Void)? = nil // 시스템 UI 활성화 상태 변경 콜백
     
     // 컨텍스트 메뉴 타입을 정의
@@ -425,8 +426,10 @@ struct PhotoEditorView: View {
                         targetFrame: boxFrames[1] ?? .zero,
                         canvasFrame: canvasFrame,
                         onTextAdd: { 
-                            topLoader1.addText("", fontSize: 32, textColor: .black, style: .plain, strokeColor: .clear, boxSize: baseBoxSize)
-                            appState.showToastMessage("텍스트가 추가되었습니다.")
+                            topLoader1.openTextEditor(boxSize: baseBoxSize)
+                        },
+                        onSFSymbolsAdd: {
+                            showSFSymbolsPicker = true
                         },
                         onManage: { /* 탑로더 관리 로직 */ },
                         onSave: { 
@@ -457,8 +460,10 @@ struct PhotoEditorView: View {
                         targetFrame: boxFrames[2] ?? .zero,
                         canvasFrame: canvasFrame,
                         onTextAdd: { 
-                            topLoader2.addText("", fontSize: 32, textColor: .black, style: .plain, strokeColor: .clear, boxSize: baseBoxSize)
-                            appState.showToastMessage("텍스트가 추가되었습니다.")
+                            topLoader2.openTextEditor(boxSize: baseBoxSize)
+                        },
+                        onSFSymbolsAdd: {
+                            showSFSymbolsPicker = true
                         },
                         onManage: { /* 탑로더 관리 로직 */ },
                         onSave: { 
@@ -709,6 +714,18 @@ struct PhotoEditorView: View {
                         topLoader2.loadFrom(savedTopLoader)
                         topLoader2.attach()
                     }
+                }
+            }
+        }
+        .sheet(isPresented: $showSFSymbolsPicker) {
+            SFSymbolsStickerView(isPresented: $showSFSymbolsPicker) { symbolName in
+                // 현재 활성화된 탑로더에 SF Symbol 추가
+                if showTopLoader1ContextMenu == true {
+                    topLoader1.addSFSymbolSticker(symbolName, size: 50, color: .primary, boxSize: baseBoxSize)
+                    appState.showToastMessage("SF Symbol 스티커가 추가되었습니다")
+                } else if showTopLoader2ContextMenu == true {
+                    topLoader2.addSFSymbolSticker(symbolName, size: 50, color: .primary, boxSize: baseBoxSize)
+                    appState.showToastMessage("SF Symbol 스티커가 추가되었습니다")
                 }
             }
         }

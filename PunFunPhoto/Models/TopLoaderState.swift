@@ -8,6 +8,8 @@ class TopLoaderState: ObservableObject {
     @Published var selectedItemId: UUID? = nil
     @Published var showEditMenu: Bool = false
     @Published var showContextMenu: Bool = false
+    @Published var showTextEditor: Bool = false
+    @Published var editingTextItem: TextItem? = nil
     
     enum SelectedItemType {
         case sticker
@@ -123,6 +125,41 @@ class TopLoaderState: ObservableObject {
         )
         texts.append(textItem)
         print("[DEBUG] addText 호출됨, texts.count: \(texts.count), text: \(text), pos: \(textItem.position)")
+    }
+    
+    func addSFSymbolSticker(_ symbolName: String, size: CGFloat = 50, color: Color = .primary, boxSize: CGSize, position: CGPoint? = nil) {
+        let stickerPosition = position ?? CGPoint(x: boxSize.width / 2, y: boxSize.height / 2)
+        
+        // SF Symbol을 UIImage로 변환
+        let config = UIImage.SymbolConfiguration(pointSize: size, weight: .regular)
+        let symbolImage = UIImage(systemName: symbolName, withConfiguration: config)?.withTintColor(UIColor(color), renderingMode: .alwaysOriginal)
+        
+        if let image = symbolImage {
+            let stickerItem = StickerItem(
+                position: stickerPosition,
+                size: size,
+                rotation: .zero,
+                image: image
+            )
+            stickers.append(stickerItem)
+            print("[DEBUG] addSFSymbolSticker 호출됨, stickers.count: \(stickers.count), symbol: \(symbolName)")
+        }
+    }
+    
+    func openTextEditor(boxSize: CGSize) {
+        let newTextItem = TextItem(
+            text: "",
+            fontSize: 32,
+            textColor: .black,
+            style: .plain,
+            strokeColor: .clear,
+            fontInfo: nil,
+            highlightColor: nil,
+            position: CGPoint(x: boxSize.width / 2, y: boxSize.height / 2)
+        )
+        editingTextItem = newTextItem
+        showTextEditor = true
+        print("[DEBUG] openTextEditor 호출됨")
     }
     
     func updateStickerPosition(_ id: UUID, position: CGPoint) {
